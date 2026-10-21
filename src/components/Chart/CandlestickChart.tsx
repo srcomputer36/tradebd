@@ -94,6 +94,23 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     setPanOffset(0);
   }, [asset.id, timeframe]);
 
+  // Keep historical view locked in place when a new live candle is appended while user is panned back
+  const prevLastCandleTimeRef = useRef<number | null>(
+    candles.length > 0 ? candles[candles.length - 1].time : null
+  );
+  useEffect(() => {
+    if (candles.length === 0) return;
+    const latestTime = candles[candles.length - 1].time;
+    if (
+      prevLastCandleTimeRef.current !== null &&
+      latestTime > prevLastCandleTimeRef.current &&
+      panOffset > 0.5
+    ) {
+      setPanOffset((prev) => prev + 1);
+    }
+    prevLastCandleTimeRef.current = latestTime;
+  }, [candles, panOffset]);
+
   const effectiveVisibleCount = Math.max(10, Math.min(candles.length, visibleCandleCount));
   // Allow panning up to 50% of screen into future right-margin (negative offset) and all the way to candle 0
   const minPanOffset = -Math.floor(effectiveVisibleCount * 0.5);
@@ -575,7 +592,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           ctx.lineTo(chartWidth, hy);
           ctx.stroke();
 
-          const cursorPrice = minPrice + ((mainHeight - hy) / (mainHeight - 30)) * priceRange;
+          const cursorPrice =
+            minPrice + ((mainHeight - 15 - hy) / (mainHeight - 30)) * priceRange;
           ctx.fillStyle = '#334155';
           ctx.fillRect(chartWidth + 2, hy - 9, rightPriceBarWidth - 4, 18);
           ctx.fillStyle = '#ffffff';

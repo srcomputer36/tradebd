@@ -19,7 +19,7 @@ interface PatternGalleryProps {
   onSelectPatternForChart?: (pattern: PatternItem) => void;
 }
 
-export const PatternGallery: React.FC<PatternGalleryProps> = () => {
+export const PatternGallery: React.FC<PatternGalleryProps> = ({ onSelectPatternForChart }) => {
   const { t, language } = useLanguage();
   const [filterType, setFilterType] = useState<'ALL' | 'BULLISH' | 'BEARISH' | 'CHART'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -292,10 +292,22 @@ export const PatternGallery: React.FC<PatternGalleryProps> = () => {
             </div>
 
             {/* Modal Footer CTA */}
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex items-center justify-end gap-2">
+              {onSelectPatternForChart && (
+                <button
+                  onClick={() => {
+                    const pat = selectedPattern;
+                    setSelectedPattern(null);
+                    onSelectPatternForChart(pat);
+                  }}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                >
+                  {isBn ? 'লাইভ চার্টে অনুশীলন করুন →' : 'Practice on Live Chart →'}
+                </button>
+              )}
               <button
                 onClick={() => setSelectedPattern(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs rounded-lg transition-colors"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs rounded-lg transition-colors cursor-pointer"
               >
                 {t('closeModal')}
               </button>

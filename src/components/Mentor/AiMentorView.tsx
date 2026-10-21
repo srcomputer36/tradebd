@@ -33,13 +33,14 @@ interface EvaluationResult {
 
 export const AiMentorView: React.FC<AiMentorViewProps> = ({ currentAsset, currentPrice }) => {
   const { t, language } = useLanguage();
+  const initialDist = currentAsset.category === 'forex' ? 0.005 : 0.015;
   const [side, setSide] = useState<'LONG' | 'SHORT'>('LONG');
   const [entryPrice, setEntryPrice] = useState<string>(currentPrice.toFixed(currentAsset.precision));
   const [stopLoss, setStopLoss] = useState<string>(
-    (side === 'LONG' ? currentPrice * 0.985 : currentPrice * 1.015).toFixed(currentAsset.precision)
+    (currentPrice * (1 - initialDist)).toFixed(currentAsset.precision)
   );
   const [takeProfit, setTakeProfit] = useState<string>(
-    (side === 'LONG' ? currentPrice * 1.035 : currentPrice * 0.965).toFixed(currentAsset.precision)
+    (currentPrice * (1 + initialDist * 2.2)).toFixed(currentAsset.precision)
   );
   const [timeframe, setTimeframe] = useState<string>('1h');
   const [notes, setNotes] = useState<string>('');
@@ -47,7 +48,7 @@ export const AiMentorView: React.FC<AiMentorViewProps> = ({ currentAsset, curren
   // Sync entry, SL, and TP when user switches between Crypto and Forex pairs
   useEffect(() => {
     const dist = currentAsset.category === 'forex' ? 0.005 : 0.015;
-    const base = currentAsset.basePrice;
+    const base = currentPrice || currentAsset.basePrice;
     setEntryPrice(base.toFixed(currentAsset.precision));
     setStopLoss(
       (side === 'LONG' ? base * (1 - dist) : base * (1 + dist)).toFixed(currentAsset.precision)

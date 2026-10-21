@@ -16,12 +16,14 @@ interface RiskCalculatorProps {
   currentBalance?: number;
   initialEntryPrice?: number;
   selectedAsset?: Asset;
+  assetPrices?: Record<string, number>;
 }
 
 export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
   currentBalance = 25000,
   initialEntryPrice = 67450,
   selectedAsset,
+  assetPrices,
 }) => {
   const { t, language } = useLanguage();
   const initialPair = selectedAsset || CRYPTO_ASSETS[0];
@@ -46,6 +48,24 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
     setBalance(Number(currentBalance.toFixed(2)));
   }, [currentBalance]);
 
+  // Keep selectedPair in sync if selectedAsset prop changes
+  useEffect(() => {
+    if (!selectedAsset) return;
+    setMarketSection(selectedAsset.category === 'forex' ? 'FOREX' : 'CRYPTO');
+    setSelectedPair(selectedAsset);
+    const liveP = assetPrices?.[selectedAsset.id] ?? initialEntryPrice ?? selectedAsset.basePrice;
+    const formattedEntry = Number(liveP.toFixed(selectedAsset.precision));
+    setEntryPrice(formattedEntry);
+    const dist = selectedAsset.category === 'forex' ? 0.005 : 0.015;
+    setStopLoss(
+      Number(
+        (side === 'LONG' ? formattedEntry * (1 - dist) : formattedEntry * (1 + dist)).toFixed(
+          selectedAsset.precision
+        )
+      )
+    );
+  }, [selectedAsset?.id]);
+
   const precision = selectedPair.precision;
 
   const handleSelectMarketSection = (sec: 'CRYPTO' | 'FOREX') => {
@@ -56,12 +76,13 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
 
   const handleSelectPair = (asset: Asset) => {
     setSelectedPair(asset);
-    setEntryPrice(asset.basePrice);
+    const liveP = Number((assetPrices?.[asset.id] ?? asset.basePrice).toFixed(asset.precision));
+    setEntryPrice(liveP);
     const dist = asset.category === 'forex' ? 0.005 : 0.015;
     if (side === 'LONG') {
-      setStopLoss(Number((asset.basePrice * (1 - dist)).toFixed(asset.precision)));
+      setStopLoss(Number((liveP * (1 - dist)).toFixed(asset.precision)));
     } else {
-      setStopLoss(Number((asset.basePrice * (1 + dist)).toFixed(asset.precision)));
+      setStopLoss(Number((liveP * (1 + dist)).toFixed(asset.precision)));
     }
   };
 
@@ -211,7 +232,7 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
                   >
                     <div>{asset.symbol}</div>
                     <div className="text-[10px] text-amber-300 font-normal">
-                      ${asset.basePrice.toFixed(asset.precision)}
+                      ${(assetPrices?.[asset.id] ?? asset.basePrice).toFixed(asset.precision)}
                     </div>
                   </button>
                 ))}
@@ -244,7 +265,7 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
                   >
                     <div>{asset.symbol}</div>
                     <div className="text-[10px] text-cyan-300 font-normal">
-                      ${asset.basePrice.toFixed(asset.precision)}
+                      ${(assetPrices?.[asset.id] ?? asset.basePrice).toFixed(asset.precision)}
                     </div>
                   </button>
                 ))}

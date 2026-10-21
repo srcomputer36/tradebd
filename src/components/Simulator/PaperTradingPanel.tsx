@@ -31,6 +31,7 @@ interface PaperTradingPanelProps {
   }) => void;
   onClosePosition: (id: string, reason?: 'MANUAL' | 'TAKE_PROFIT' | 'STOP_LOSS') => void;
   onResetAccount: () => void;
+  onSetCustomBalance?: (newAmount: number) => void;
   defaultSide?: OrderSide;
   defaultEntryPrice?: number;
 }
@@ -44,6 +45,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
   onOpenPosition,
   onClosePosition,
   onResetAccount,
+  onSetCustomBalance,
   defaultSide = 'LONG',
 }) => {
   const { t, language } = useLanguage();
@@ -69,6 +71,15 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
     setFeedbackMsg(null);
     setLeverage((prev) => Math.min(prev, currentAsset.leverageMax));
   }, [currentAsset.id, currentAsset.leverageMax]);
+
+  // Adjust marginInput if user sets a custom balance smaller than current marginInput
+  useEffect(() => {
+    const currentM = parseFloat(marginInput) || 0;
+    if (balance > 0 && currentM > balance) {
+      const adapted = balance >= 500 ? 500 : Math.max(1, Math.floor(balance * 0.1));
+      setMarginInput(adapted.toString());
+    }
+  }, [balance]);
 
   // Lookup asset category & precision
   const getAssetInfo = (assetId: string) => {
@@ -241,10 +252,15 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
     setMarginInput(val.toString());
   };
 
-  // Performance metrics
+  // Performance metrics & Total Account Equity (Free Balance + Locked Margin + Unrealized PnL)
   const totalTrades = tradeHistory.length;
   const winningTrades = tradeHistory.filter((item) => item.pnl > 0).length;
   const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : '0.0';
+  const openPositionsValue = useMemo(
+    () => positions.reduce((sum, p) => sum + Math.max(0, p.margin + p.pnl), 0),
+    [positions]
+  );
+  const totalEquity = balance + openPositionsValue;
 
   const localizedAssetName =
     currentAsset.localizedNames?.[language] ||
@@ -446,14 +462,30 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
           </button>
         </div>
 
-        {/* Portfolio Stats */}
-        <div className="flex items-center gap-3 text-xs font-mono">
+        {/* Portfolio Stats & Custom Demo Fund Controls */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-mono">
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">{t('demoFund')}:</span>
-            <span className="font-bold text-white tabular-numbers">
-              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            <span className="text-slate-400">
+              {language === 'bn' ? 'ফ্রি ব্যালেন্স:' : `${t('demoFund')}:`}
+            </span>
+            <span className="font-bold text-emerald-400 tabular-numbers">
+              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
+
+          {positions.length > 0 && (
+            <>
+              <span className="text-slate-700" aria-hidden="true">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400">
+                  {language === 'bn' ? 'মোট ইকুইটি:' : 'Total Equity:'}
+                </span>
+                <span className="font-bold text-white tabular-numbers">
+                  ${totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </>
+          )}
 
           <span className="text-slate-700" aria-hidden="true">|</span>
 
@@ -462,12 +494,35 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
             <span className="font-bold text-cyan-400 tabular-numbers">{winRate}%</span>
           </div>
 
+          {onSetCustomBalance && (
+            <div className="hidden xl:flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded-md border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-sans pr-1">
+                {language === 'bn' ? 'কুইক ফান্ড:' : 'Quick Fund:'}
+              </span>
+              {[100, 1000, 10000, 50000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => onSetCustomBalance(amt)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                    Math.round(balance) === amt
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  ${amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          )}
+
           <button
             onClick={onResetAccount}
-            title={t('resetDemo')}
-            className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded transition-colors ml-1 cursor-pointer"
+            title={language === 'bn' ? 'ইচ্ছামতো ডেমো ফান্ড নিন বা রিসেট করুন' : 'Set Custom Demo Fund or Reset'}
+            className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 rounded-md transition-colors ml-1 flex items-center gap-1.5 font-sans font-bold text-[11px] cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3 h-3" />
+            <span>{language === 'bn' ? 'কাস্টম ফান্ড / রিসেট' : 'Custom Fund / Reset'}</span>
           </button>
         </div>
       </div>
