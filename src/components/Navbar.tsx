@@ -183,16 +183,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Demo Fund Display */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono">
-          <span className="text-slate-400">{t('demoFund')}:</span>
+        {/* Demo Fund Display (visible on both mobile and desktop) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono">
+          <span className="hidden sm:inline text-slate-400">{t('demoFund')}:</span>
           <span className="font-bold text-emerald-400 tabular-numbers">
             ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <button
             onClick={onResetDemo}
             title={t('resetDemo')}
-            className="text-slate-400 hover:text-slate-200 transition-colors ml-1 p-0.5 rounded"
+            className="text-slate-400 hover:text-slate-200 transition-colors ml-0.5 sm:ml-1 p-0.5 rounded cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Primary Action Button */}
         <button
           onClick={() => onSelectTab('SIMULATOR')}
-          className="px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs"
+          className="hidden sm:inline-flex px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
         >
           {t('practiceTrading')}
         </button>

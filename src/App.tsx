@@ -27,15 +27,87 @@ export default function App() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<NavTab>('CHART');
   const [selectedAsset, setSelectedAsset] = useState<Asset>(TRADING_ASSETS[0]);
-  const [candles, setCandles] = useState<Candle[]>(() => generateCandles(TRADING_ASSETS[0], 75));
   const [timeframe, setTimeframe] = useState<string>('15m');
+  const [simulatorDefaultSide, setSimulatorDefaultSide] = useState<OrderSide>('LONG');
+
+  // Track live prices for all Crypto and Forex pairs simultaneously
+  const [assetPrices, setAssetPrices] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const a of TRADING_ASSETS) {
+      initial[a.id] = a.basePrice;
+    }
+    return initial;
+  });
+
+  const [candles, setCandles] = useState<Candle[]>(() =>
+    generateCandles(TRADING_ASSETS[0], 220, '15m', TRADING_ASSETS[0].basePrice)
+  );
   const [isLiveTicking, setIsLiveTicking] = useState<boolean>(true);
   const [tickSpeed, setTickSpeed] = useState<number>(1);
 
-  // Paper Trading state
-  const [balance, setBalance] = useState<number>(25000);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>([]);
+  // Paper Trading state persisted in localStorage
+  const [balance, setBalance] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('tradebd_balance');
+      if (saved !== null) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return 25000;
+  });
+
+  const [positions, setPositions] = useState<Position[]>(() => {
+    try {
+      const saved = localStorage.getItem('tradebd_positions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>(() => {
+    try {
+      const saved = localStorage.getItem('tradebd_history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebd_balance', balance.toString());
+    } catch {
+      // ignore
+    }
+  }, [balance]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebd_positions', JSON.stringify(positions));
+    } catch {
+      // ignore
+    }
+  }, [positions]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebd_history', JSON.stringify(tradeHistory));
+    } catch {
+      // ignore
+    }
+  }, [tradeHistory]);
 
   // Toast notification state & Reset Demo confirmation modal state
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'danger' | 'info' } | null>(null);
@@ -54,37 +126,62 @@ export default function App() {
     document.title = `${t('appName')} - ${t('appTagline')}`;
   }, [t]);
 
-  // When selected asset changes, generate new candles series
+  // When selected asset changes, generate 220 candles anchored to that asset's current live price
   const handleSelectAsset = (asset: Asset) => {
     setSelectedAsset(asset);
-    setCandles(generateCandles(asset, 75));
+    const targetPrice = assetPrices[asset.id] ?? asset.basePrice;
+    setCandles(generateCandles(asset, 220, timeframe, targetPrice));
+  };
+
+  // When timeframe changes on the chart, regenerate 220 candles for that timeframe anchored to live price
+  const handleChangeTimeframe = (tf: string) => {
+    setTimeframe(tf);
+    const targetPrice = assetPrices[selectedAsset.id] ?? selectedAsset.basePrice;
+    setCandles(generateCandles(selectedAsset, 220, tf, targetPrice));
   };
 
   const lastCandle = candles[candles.length - 1];
-  const currentPrice = lastCandle ? lastCandle.close : selectedAsset.basePrice;
+  const currentPrice = lastCandle ? lastCandle.close : (assetPrices[selectedAsset.id] ?? selectedAsset.basePrice);
 
   // Counter to produce new candle every ~12 ticks
   const tickCounterRef = useRef(0);
 
-  // Live price tick simulation loop
+  // Live price tick simulation loop for both selected chart candles & all background assets
   useEffect(() => {
     if (!isLiveTicking) return;
 
     const intervalMs = Math.max(250, 1200 / tickSpeed);
     const interval = setInterval(() => {
+      tickCounterRef.current += 1;
+      const isNewCandle = tickCounterRef.current >= 12;
+      if (isNewCandle) tickCounterRef.current = 0;
+
       setCandles((prevCandles) => {
         if (prevCandles.length === 0) return prevCandles;
 
-        tickCounterRef.current += 1;
-        const isNewCandle = tickCounterRef.current >= 12;
-        if (isNewCandle) tickCounterRef.current = 0;
-
         const last = prevCandles[prevCandles.length - 1];
         const { updatedCandle, newCandle } = simulateTick(last, selectedAsset, isNewCandle);
+        const latestClose = newCandle ? newCandle.close : updatedCandle.close;
+
+        // Update live prices for all assets (selectedAsset uses exact candle close)
+        setAssetPrices((prevPrices) => {
+          const nextPrices: Record<string, number> = {
+            ...prevPrices,
+            [selectedAsset.id]: latestClose,
+          };
+          for (const a of TRADING_ASSETS) {
+            if (a.id === selectedAsset.id) continue;
+            const prevP = prevPrices[a.id] ?? a.basePrice;
+            const vol = a.category === 'forex' ? 0.0003 : 0.0015;
+            const deltaPct = (Math.random() - 0.495) * vol;
+            nextPrices[a.id] = Number((prevP * (1 + deltaPct)).toFixed(a.precision));
+          }
+          return nextPrices;
+        });
 
         if (newCandle) {
-          // Keep window around 85 candles to avoid memory growth
-          return [...prevCandles.slice(-85), newCandle];
+          // Keep 220 candles so EMA 200 always has full data
+          return [...prevCandles.slice(-220), newCandle];
         } else {
           return [...prevCandles.slice(0, -1), updatedCandle];
         }
@@ -94,11 +191,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isLiveTicking, tickSpeed, selectedAsset]);
 
-  // Evaluate open positions on price change (check SL/TP & PnL) without side-effects in state updater
+  // Evaluate open positions across ALL assets on live price ticks (check SL/TP/Liquidation & PnL)
   useEffect(() => {
-    if (positions.length === 0 || !lastCandle) return;
+    if (positions.length === 0) return;
 
-    const price = lastCandle.close;
     const updatedPositions: Position[] = [];
     const newClosedTrades: TradeHistory[] = [];
     let balanceDelta = 0;
@@ -106,104 +202,128 @@ export default function App() {
     let hasChanges = false;
 
     for (const pos of positions) {
-      if (pos.assetId === selectedAsset.id) {
+      const liveAssetPrice =
+        pos.assetId === selectedAsset.id
+          ? currentPrice
+          : assetPrices[pos.assetId] ?? pos.currentPrice;
+
+      if (liveAssetPrice !== pos.currentPrice) {
         hasChanges = true;
-        const diff = pos.side === 'LONG' ? price - pos.entryPrice : pos.entryPrice - price;
-        const pnl = diff * pos.size;
-        const pnlPercent = (pnl / pos.margin) * 100;
-
-        // Check Take Profit hit
-        if (pos.takeProfit) {
-          const tpHit = pos.side === 'LONG' ? price >= pos.takeProfit : price <= pos.takeProfit;
-          if (tpHit) {
-            toastEvent = {
-              msg: `🎯 TP Hit! ${pos.symbol} ${pos.side} (+${pnl >= 0 ? '$' : '-$'}${Math.abs(pnl).toFixed(2)})`,
-              type: 'success',
-            };
-            balanceDelta += pos.margin + pnl;
-            newClosedTrades.push({
-              id: `th-${Date.now()}-${pos.id}`,
-              assetId: pos.assetId,
-              symbol: pos.symbol,
-              side: pos.side,
-              entryPrice: pos.entryPrice,
-              exitPrice: price,
-              size: pos.size,
-              leverage: pos.leverage,
-              pnl,
-              pnlPercent,
-              closeTime: Date.now(),
-              reason: 'TAKE_PROFIT',
-            });
-            continue;
-          }
-        }
-
-        // Check Stop Loss hit
-        if (pos.stopLoss) {
-          const slHit = pos.side === 'LONG' ? price <= pos.stopLoss : price >= pos.stopLoss;
-          if (slHit) {
-            toastEvent = {
-              msg: `🛑 SL Hit! ${pos.symbol} ${pos.side} (-$${Math.abs(pnl).toFixed(2)})`,
-              type: 'danger',
-            };
-            balanceDelta += Math.max(0, pos.margin + pnl);
-            newClosedTrades.push({
-              id: `th-${Date.now()}-${pos.id}`,
-              assetId: pos.assetId,
-              symbol: pos.symbol,
-              side: pos.side,
-              entryPrice: pos.entryPrice,
-              exitPrice: price,
-              size: pos.size,
-              leverage: pos.leverage,
-              pnl,
-              pnlPercent,
-              closeTime: Date.now(),
-              reason: 'STOP_LOSS',
-            });
-            continue;
-          }
-        }
-
-        // Check Liquidation
-        if (pos.liquidationPrice > 0) {
-          const liqHit =
-            pos.side === 'LONG'
-              ? price <= pos.liquidationPrice
-              : price >= pos.liquidationPrice;
-          if (liqHit) {
-            toastEvent = {
-              msg: `⚠️ Liquidation! ${pos.symbol} (-$${pos.margin.toFixed(2)})`,
-              type: 'danger',
-            };
-            newClosedTrades.push({
-              id: `th-${Date.now()}-${pos.id}`,
-              assetId: pos.assetId,
-              symbol: pos.symbol,
-              side: pos.side,
-              entryPrice: pos.entryPrice,
-              exitPrice: price,
-              size: pos.size,
-              leverage: pos.leverage,
-              pnl: -pos.margin,
-              pnlPercent: -100,
-              closeTime: Date.now(),
-              reason: 'STOP_LOSS',
-            });
-            continue;
-          }
-        }
-
-        updatedPositions.push({
-          ...pos,
-          currentPrice: price,
-          pnl,
-          pnlPercent,
-        });
-      } else {
-        updatedPositions.push(pos);
       }
+
+      const diff =
+        pos.side === 'LONG' ? liveAssetPrice - pos.entryPrice : pos.entryPrice - liveAssetPrice;
+      const pnl = diff * pos.size;
+      const pnlPercent = (pnl / pos.margin) * 100;
+
+      // Check Take Profit hit
+      if (pos.takeProfit) {
+        const tpHit =
+          pos.side === 'LONG'
+            ? liveAssetPrice >= pos.takeProfit
+            : liveAssetPrice <= pos.takeProfit;
+        if (tpHit) {
+          hasChanges = true;
+          const exitP = pos.takeProfit;
+          const tpDiff = pos.side === 'LONG' ? exitP - pos.entryPrice : pos.entryPrice - exitP;
+          const tpPnl = tpDiff * pos.size;
+          const tpPnlPercent = (tpPnl / pos.margin) * 100;
+
+          toastEvent = {
+            msg: `🎯 TP Hit! ${pos.symbol} ${pos.side} (+$${Math.abs(tpPnl).toFixed(2)})`,
+            type: 'success',
+          };
+          balanceDelta += pos.margin + tpPnl;
+          newClosedTrades.push({
+            id: `th-${Date.now()}-${pos.id}`,
+            assetId: pos.assetId,
+            symbol: pos.symbol,
+            side: pos.side,
+            entryPrice: pos.entryPrice,
+            exitPrice: exitP,
+            size: pos.size,
+            leverage: pos.leverage,
+            pnl: tpPnl,
+            pnlPercent: tpPnlPercent,
+            closeTime: Date.now(),
+            reason: 'TAKE_PROFIT',
+          });
+          continue;
+        }
+      }
+
+      // Check Stop Loss hit
+      if (pos.stopLoss) {
+        const slHit =
+          pos.side === 'LONG'
+            ? liveAssetPrice <= pos.stopLoss
+            : liveAssetPrice >= pos.stopLoss;
+        if (slHit) {
+          hasChanges = true;
+          const exitP = pos.stopLoss;
+          const slDiff = pos.side === 'LONG' ? exitP - pos.entryPrice : pos.entryPrice - exitP;
+          const slPnl = Math.max(-pos.margin, slDiff * pos.size);
+          const slPnlPercent = (slPnl / pos.margin) * 100;
+
+          toastEvent = {
+            msg: `🛑 SL Hit! ${pos.symbol} ${pos.side} (-$${Math.abs(slPnl).toFixed(2)})`,
+            type: 'danger',
+          };
+          balanceDelta += Math.max(0, pos.margin + slPnl);
+          newClosedTrades.push({
+            id: `th-${Date.now()}-${pos.id}`,
+            assetId: pos.assetId,
+            symbol: pos.symbol,
+            side: pos.side,
+            entryPrice: pos.entryPrice,
+            exitPrice: exitP,
+            size: pos.size,
+            leverage: pos.leverage,
+            pnl: slPnl,
+            pnlPercent: slPnlPercent,
+            closeTime: Date.now(),
+            reason: 'STOP_LOSS',
+          });
+          continue;
+        }
+      }
+
+      // Check Liquidation
+      if (pos.liquidationPrice > 0) {
+        const liqHit =
+          pos.side === 'LONG'
+            ? liveAssetPrice <= pos.liquidationPrice
+            : liveAssetPrice >= pos.liquidationPrice;
+        if (liqHit) {
+          hasChanges = true;
+          toastEvent = {
+            msg: `⚠️ Liquidation! ${pos.symbol} (-$${pos.margin.toFixed(2)})`,
+            type: 'danger',
+          };
+          newClosedTrades.push({
+            id: `th-${Date.now()}-${pos.id}`,
+            assetId: pos.assetId,
+            symbol: pos.symbol,
+            side: pos.side,
+            entryPrice: pos.entryPrice,
+            exitPrice: pos.liquidationPrice,
+            size: pos.size,
+            leverage: pos.leverage,
+            pnl: -pos.margin,
+            pnlPercent: -100,
+            closeTime: Date.now(),
+            reason: 'STOP_LOSS',
+          });
+          continue;
+        }
+      }
+
+      updatedPositions.push({
+        ...pos,
+        currentPrice: liveAssetPrice,
+        pnl,
+        pnlPercent,
+      });
     }
 
     if (hasChanges) {
@@ -218,7 +338,7 @@ export default function App() {
     if (toastEvent) {
       showToast(toastEvent.msg, toastEvent.type);
     }
-  }, [lastCandle, selectedAsset.id, showToast]);
+  }, [currentPrice, assetPrices, selectedAsset.id, showToast]);
 
   // Open position handler
   const handleOpenPosition = (order: {
@@ -250,7 +370,7 @@ export default function App() {
     }
 
     const newPosition: Position = {
-      id: `pos-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `pos-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       assetId: order.asset.id,
       symbol: order.asset.symbol,
       side: order.side,
@@ -279,7 +399,7 @@ export default function App() {
     const pos = positions.find((p) => p.id === id);
     if (!pos) return;
 
-    const returnFunds = pos.margin + pos.pnl;
+    const returnFunds = Math.max(0, pos.margin + pos.pnl);
     setBalance((b) => Math.max(0, b + returnFunds));
 
     setTradeHistory((th) => [
@@ -316,6 +436,13 @@ export default function App() {
     setBalance(25000);
     setPositions([]);
     setTradeHistory([]);
+    try {
+      localStorage.removeItem('tradebd_balance');
+      localStorage.removeItem('tradebd_positions');
+      localStorage.removeItem('tradebd_history');
+    } catch {
+      // ignore
+    }
     setShowResetModal(false);
     showToast(t('resetDemoSuccess'), 'success');
   };
@@ -412,6 +539,7 @@ export default function App() {
             <MarketSectionsBar
               selectedAsset={selectedAsset}
               currentPrice={currentPrice}
+              assetPrices={assetPrices}
               onSelectAsset={handleSelectAsset}
             />
 
@@ -427,8 +555,9 @@ export default function App() {
                   onToggleLive={() => setIsLiveTicking(!isLiveTicking)}
                   onChangeSpeed={setTickSpeed}
                   timeframe={timeframe}
-                  onChangeTimeframe={setTimeframe}
-                  onSelectPriceForOrder={(price, side) => {
+                  onChangeTimeframe={handleChangeTimeframe}
+                  onSelectPriceForOrder={(_price, side) => {
+                    setSimulatorDefaultSide(side);
                     setActiveTab('SIMULATOR');
                   }}
                 />
@@ -578,6 +707,7 @@ export default function App() {
             <MarketSectionsBar
               selectedAsset={selectedAsset}
               currentPrice={currentPrice}
+              assetPrices={assetPrices}
               onSelectAsset={handleSelectAsset}
             />
             <PaperTradingPanel
@@ -589,6 +719,7 @@ export default function App() {
               onOpenPosition={handleOpenPosition}
               onClosePosition={handleClosePosition}
               onResetAccount={handleResetDemo}
+              defaultSide={simulatorDefaultSide}
             />
           </div>
         )}
@@ -601,7 +732,11 @@ export default function App() {
 
         {/* TAB 5: RISK & POSITION SIZING CALCULATOR */}
         {activeTab === 'CALCULATOR' && (
-          <RiskCalculator currentBalance={balance} initialEntryPrice={currentPrice} />
+          <RiskCalculator
+            currentBalance={balance}
+            initialEntryPrice={currentPrice}
+            selectedAsset={selectedAsset}
+          />
         )}
 
         {/* TAB 6: AI TRADE MENTOR & ANALYZER */}
@@ -610,6 +745,7 @@ export default function App() {
             <MarketSectionsBar
               selectedAsset={selectedAsset}
               currentPrice={currentPrice}
+              assetPrices={assetPrices}
               onSelectAsset={handleSelectAsset}
             />
             <AiMentorView currentAsset={selectedAsset} currentPrice={currentPrice} />

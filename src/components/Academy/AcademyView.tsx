@@ -23,9 +23,26 @@ export const AcademyView: React.FC = () => {
   const [selectedLessonId, setSelectedLessonId] = useState<string>(
     ACADEMY_MODULES[0].lessons[0].id
   );
-  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
-    new Set(['lesson-1-1'])
-  );
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('tradebd_completed_lessons');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {
+      // ignore
+    }
+    return new Set(['lesson-1-1']);
+  });
+
+  const saveCompletedSet = (next: Set<string>) => {
+    try {
+      localStorage.setItem('tradebd_completed_lessons', JSON.stringify(Array.from(next)));
+    } catch {
+      // ignore
+    }
+  };
 
   // Quiz state
   const [currentQuizIndex, setCurrentQuizIndex] = useState<number>(0);
@@ -45,6 +62,7 @@ export const AcademyView: React.FC = () => {
   const totalLessonsCount = allLessons.length;
   const completedCount = completedLessonIds.size;
   const progressPercent = Math.round((completedCount / totalLessonsCount) * 100);
+  const currentLessonIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
 
   // Toggle lesson completed
   const toggleLessonCompleted = (lessonId: string) => {
@@ -52,27 +70,32 @@ export const AcademyView: React.FC = () => {
       const next = new Set(prev);
       if (next.has(lessonId)) next.delete(lessonId);
       else next.add(lessonId);
+      saveCompletedSet(next);
       return next;
     });
   };
 
-  // Navigate to next lesson
+  // Navigate to next lesson (always mark current lesson as completed, never un-complete it!)
   const handleNextLesson = () => {
-    // mark current as completed
-    toggleLessonCompleted(activeLesson.id);
+    setCompletedLessonIds((prev) => {
+      const next = new Set(prev);
+      next.add(activeLesson.id);
+      saveCompletedSet(next);
+      return next;
+    });
 
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
-    if (currentIndex < allLessons.length - 1) {
-      const next = allLessons[currentIndex + 1];
+    if (currentLessonIndex < allLessons.length - 1) {
+      const next = allLessons[currentLessonIndex + 1];
       setSelectedModuleId(next.moduleId);
       setSelectedLessonId(next.id);
+    } else {
+      setActiveTab('QUIZ');
     }
   };
 
   const handlePrevLesson = () => {
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
-    if (currentIndex > 0) {
-      const prev = allLessons[currentIndex - 1];
+    if (currentLessonIndex > 0) {
+      const prev = allLessons[currentLessonIndex - 1];
       setSelectedModuleId(prev.moduleId);
       setSelectedLessonId(prev.id);
     }
@@ -325,7 +348,8 @@ export const AcademyView: React.FC = () => {
               <div className="flex items-center justify-between pt-6 border-t border-slate-800">
                 <button
                   onClick={handlePrevLesson}
-                  className="flex items-center gap-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors"
+                  disabled={currentLessonIndex <= 0}
+                  className="flex items-center gap-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>{t('prevLesson')}</span>
@@ -333,9 +357,13 @@ export const AcademyView: React.FC = () => {
 
                 <button
                   onClick={handleNextLesson}
-                  className="flex items-center gap-1 px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                  className="flex items-center gap-1 px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
                 >
-                  <span>{t('nextLesson')}</span>
+                  <span>
+                    {currentLessonIndex < allLessons.length - 1
+                      ? t('nextLesson')
+                      : t('skillTestQuiz')}
+                  </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

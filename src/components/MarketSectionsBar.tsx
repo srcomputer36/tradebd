@@ -7,12 +7,14 @@ import { Coins, Globe2, Layers, CheckCircle2 } from 'lucide-react';
 interface MarketSectionsBarProps {
   selectedAsset: Asset;
   currentPrice: number;
+  assetPrices?: Record<string, number>;
   onSelectAsset: (asset: Asset) => void;
 }
 
 export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
   selectedAsset,
   currentPrice,
+  assetPrices,
   onSelectAsset,
 }) => {
   const { language } = useLanguage();
@@ -187,7 +189,9 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CRYPTO_ASSETS.map((asset) => {
                 const isSelected = asset.id === selectedAsset.id;
-                const displayPrice = isSelected ? currentPrice : asset.basePrice;
+                const displayPrice = isSelected
+                  ? currentPrice
+                  : assetPrices?.[asset.id] ?? asset.basePrice;
                 return (
                   <button
                     key={asset.id}
@@ -264,7 +268,9 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {FOREX_ASSETS.map((asset) => {
                 const isSelected = asset.id === selectedAsset.id;
-                const displayPrice = isSelected ? currentPrice : asset.basePrice;
+                const displayPrice = isSelected
+                  ? currentPrice
+                  : assetPrices?.[asset.id] ?? asset.basePrice;
                 return (
                   <button
                     key={asset.id}

@@ -59,8 +59,20 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   });
 
   const [showIndicatorMenu, setShowIndicatorMenu] = useState(false);
+  const indicatorMenuRef = useRef<HTMLDivElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
+
+  // Close indicator menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (indicatorMenuRef.current && !indicatorMenuRef.current.contains(event.target as Node)) {
+        setShowIndicatorMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Calculate indicators memoized
   const ema20 = useMemo(() => calculateEMA(candles, 20), [candles]);
@@ -68,7 +80,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const ema200 = useMemo(() => calculateEMA(candles, 200), [candles]);
   const rsi = useMemo(() => calculateRSI(candles, 14), [candles]);
   const bollinger = useMemo(() => calculateBollingerBands(candles, 20, 2), [candles]);
-  const keyLevels = useMemo(() => detectKeyLevels(candles), [candles]);
+  const keyLevels = useMemo(
+    () => detectKeyLevels(candles, asset.category === 'forex' ? 0.0015 : 0.008),
+    [candles, asset.category]
+  );
 
   const lastCandle = candles[candles.length - 1];
   const prevCandle = candles[candles.length - 2] || lastCandle;
@@ -142,6 +157,17 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         const l = visibleBbLower[i];
         if (u !== null && u > maxPrice) maxPrice = u;
         if (l !== null && l < minPrice) minPrice = l;
+      }
+    }
+
+    // Include EMA 200 in min/max if active so macro trend line is always visible
+    if (indicators.showEMA200) {
+      for (let i = 0; i < visibleEma200.length; i++) {
+        const v = visibleEma200[i];
+        if (v !== null) {
+          if (v > maxPrice) maxPrice = v;
+          if (v < minPrice) minPrice = v;
+        }
       }
     }
 
@@ -680,17 +706,17 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           </div>
 
           {/* Indicator toggles dropdown */}
-          <div className="relative">
+          <div className="relative" ref={indicatorMenuRef}>
             <button
               onClick={() => setShowIndicatorMenu(!showIndicatorMenu)}
-              className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 text-slate-200 rounded border border-slate-700 hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 text-slate-200 rounded border border-slate-700 hover:bg-slate-700 transition-colors cursor-pointer"
             >
               <SlidersHorizontal className="w-3 h-3 text-cyan-400" />
               <span>{t('indicators')}</span>
             </button>
 
             {showIndicatorMenu && (
-              <div className="absolute right-0 mt-1 w-52 bg-[#0f172a] border border-slate-700 rounded-lg shadow-xl p-2 z-50 text-xs">
+              <div className="absolute right-0 mt-1 w-56 bg-[#0f172a] border border-slate-700 rounded-lg shadow-xl p-2 z-50 text-xs">
                 <div className="text-[11px] font-semibold text-slate-400 px-2 py-1 uppercase tracking-wider border-b border-slate-800">
                   {t('technicalIndicators')}
                 </div>
@@ -698,7 +724,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                   <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/70 cursor-pointer text-slate-200">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-0.5 bg-cyan-400 inline-block"></span>
-                      EMA 20 (মোমেন্টাম)
+                      {language === 'bn' ? 'EMA 20 (মোমেন্টাম)' : 'EMA 20 (Momentum)'}
                     </span>
                     <input
                       type="checkbox"
@@ -713,7 +739,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                   <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/70 cursor-pointer text-slate-200">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-0.5 bg-orange-500 inline-block"></span>
-                      EMA 50 (ট্রেন্ড)
+                      {language === 'bn' ? 'EMA 50 (ট্রেন্ড)' : 'EMA 50 (Trend)'}
                     </span>
                     <input
                       type="checkbox"
@@ -728,7 +754,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                   <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/70 cursor-pointer text-slate-200">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-0.5 bg-purple-500 inline-block"></span>
-                      EMA 200 (ম্যাক্রো)
+                      {language === 'bn' ? 'EMA 200 (ম্যাক্রো)' : 'EMA 200 (Macro Trend)'}
                     </span>
                     <input
                       type="checkbox"
@@ -773,7 +799,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                   <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/70 cursor-pointer text-slate-200">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-0.5 bg-emerald-400 inline-block"></span>
-                      সাপোর্ট ও রেজিস্ট্যান্স
+                      {language === 'bn' ? 'সাপোর্ট ও রেজিস্ট্যান্স' : 'Support & Resistance'}
                     </span>
                     <input
                       type="checkbox"
@@ -788,7 +814,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                   <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/70 cursor-pointer text-slate-200">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-0.5 bg-slate-400 inline-block"></span>
-                      ভলিউম বার (Volume)
+                      {language === 'bn' ? 'ভলিউম বার (Volume)' : 'Volume Bars'}
                     </span>
                     <input
                       type="checkbox"

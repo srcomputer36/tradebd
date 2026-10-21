@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { CRYPTO_ASSETS, FOREX_ASSETS } from '../../data/assets';
 import { Asset } from '../../types/trading';
@@ -15,22 +15,36 @@ import {
 interface RiskCalculatorProps {
   currentBalance?: number;
   initialEntryPrice?: number;
+  selectedAsset?: Asset;
 }
 
 export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
   currentBalance = 25000,
   initialEntryPrice = 67450,
+  selectedAsset,
 }) => {
   const { t, language } = useLanguage();
-  const [marketSection, setMarketSection] = useState<'CRYPTO' | 'FOREX'>('CRYPTO');
-  const [selectedPair, setSelectedPair] = useState<Asset>(CRYPTO_ASSETS[0]);
-  const [balance, setBalance] = useState<number>(currentBalance);
+  const initialPair = selectedAsset || CRYPTO_ASSETS[0];
+  const initialSec = initialPair.category === 'forex' ? 'FOREX' : 'CRYPTO';
+  const startEntry = Number(
+    (initialEntryPrice || initialPair.basePrice).toFixed(initialPair.precision)
+  );
+  const startDist = initialPair.category === 'forex' ? 0.005 : 0.015;
+
+  const [marketSection, setMarketSection] = useState<'CRYPTO' | 'FOREX'>(initialSec);
+  const [selectedPair, setSelectedPair] = useState<Asset>(initialPair);
+  const [balance, setBalance] = useState<number>(Number(currentBalance.toFixed(2)));
   const [riskPercent, setRiskPercent] = useState<number>(1);
   const [side, setSide] = useState<'LONG' | 'SHORT'>('LONG');
-  const [entryPrice, setEntryPrice] = useState<number>(initialEntryPrice);
+  const [entryPrice, setEntryPrice] = useState<number>(startEntry);
   const [stopLoss, setStopLoss] = useState<number>(
-    Number((initialEntryPrice * 0.985).toFixed(2))
+    Number((startEntry * (1 - startDist)).toFixed(initialPair.precision))
   );
+
+  // Keep balance in sync if demo account balance changes
+  useEffect(() => {
+    setBalance(Number(currentBalance.toFixed(2)));
+  }, [currentBalance]);
 
   const precision = selectedPair.precision;
 

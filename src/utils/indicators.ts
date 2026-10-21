@@ -116,7 +116,7 @@ export interface KeyLevel {
   strength: number; // 1 to 5
 }
 
-export function detectKeyLevels(candles: Candle[], tolerancePercent: number = 0.015): KeyLevel[] {
+export function detectKeyLevels(candles: Candle[], tolerancePercent: number = 0.008): KeyLevel[] {
   if (candles.length < 15) return [];
 
   const pivotHighs: number[] = [];
@@ -142,6 +142,7 @@ export function detectKeyLevels(candles: Candle[], tolerancePercent: number = 0.
     for (const p of points) {
       let matched = false;
       for (const c of clusters) {
+        if (c.type !== type) continue;
         const avg = c.sum / c.count;
         if (Math.abs(p - avg) / avg < tolerancePercent) {
           c.sum += p;
@@ -159,13 +160,27 @@ export function detectKeyLevels(candles: Candle[], tolerancePercent: number = 0.
   clusterPoints(pivotHighs, 'RESISTANCE');
   clusterPoints(pivotLows, 'SUPPORT');
 
-  // Filter significant levels and sort
-  return clusters
-    .filter((c) => c.count >= 2)
+  // Filter significant levels (or fallback to top pivots if few clusters)
+  const strongClusters = clusters.filter((c) => c.count >= 2);
+  const sourceClusters = strongClusters.length >= 2 ? strongClusters : clusters;
+
+  const supports = sourceClusters
+    .filter((c) => c.type === 'SUPPORT')
+    .slice(-2)
     .map((c) => ({
       price: c.sum / c.count,
       type: c.type,
       strength: Math.min(5, c.count),
-    }))
-    .slice(-4); // Keep recent 4 key levels
+    }));
+
+  const resistances = sourceClusters
+    .filter((c) => c.type === 'RESISTANCE')
+    .slice(-2)
+    .map((c) => ({
+      price: c.sum / c.count,
+      type: c.type,
+      strength: Math.min(5, c.count),
+    }));
+
+  return [...supports, ...resistances];
 }

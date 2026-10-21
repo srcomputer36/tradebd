@@ -57,6 +57,11 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
     null
   );
 
+  // Sync side if defaultSide changes from Chart quick-order button
+  useEffect(() => {
+    setSide(defaultSide);
+  }, [defaultSide]);
+
   // Reset SL/TP and clamp leverage when user switches between Crypto and Forex pairs
   useEffect(() => {
     setStopLossInput('');
@@ -659,6 +664,11 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                     !isTpValid ? 'border-rose-500' : 'border-slate-800 focus:border-emerald-500'
                   }`}
                 />
+                {!isTpValid && (
+                  <p className="text-[10px] text-rose-400">
+                    {side === 'LONG' ? t('invalidTpLong') : t('invalidTpShort')}
+                  </p>
+                )}
               </div>
             </div>
 

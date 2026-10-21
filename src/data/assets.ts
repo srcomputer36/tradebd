@@ -261,15 +261,31 @@ export const FOREX_ASSETS: Asset[] = [
 export const TRADING_ASSETS: Asset[] = [...CRYPTO_ASSETS, ...FOREX_ASSETS];
 
 /**
- * Generate a realistic historical candlestick series
+ * Generate a realistic historical candlestick series anchored to targetEndPrice
  */
-export function generateCandles(asset: Asset, count: number = 80): Candle[] {
-  const candles: Candle[] = [];
+export function generateCandles(
+  asset: Asset,
+  count: number = 220,
+  timeframe: string = '15m',
+  targetEndPrice?: number
+): Candle[] {
+  const rawCandles: Candle[] = [];
   const now = Date.now();
-  const intervalMs = 60 * 1000 * 15; // 15 minute interval standard
 
-  let currentPrice = asset.basePrice * 0.94; // start slightly below base
-  const volatility = asset.category === 'forex' ? 0.0012 : 0.0065;
+  const tfMultiplierMap: Record<string, { ms: number; volScale: number }> = {
+    '1m': { ms: 60 * 1000, volScale: 0.45 },
+    '5m': { ms: 5 * 60 * 1000, volScale: 0.75 },
+    '15m': { ms: 15 * 60 * 1000, volScale: 1.0 },
+    '1h': { ms: 60 * 60 * 1000, volScale: 1.5 },
+    '1D': { ms: 24 * 60 * 60 * 1000, volScale: 2.8 },
+  };
+
+  const tfConfig = tfMultiplierMap[timeframe] || tfMultiplierMap['15m'];
+  const intervalMs = tfConfig.ms;
+
+  let currentPrice = asset.basePrice;
+  const baseVol = asset.category === 'forex' ? 0.0011 : 0.0055;
+  const volatility = baseVol * tfConfig.volScale;
 
   let trendDirection = 1;
   let trendSteps = 0;
@@ -280,42 +296,54 @@ export function generateCandles(asset: Asset, count: number = 80): Candle[] {
     // Trend simulation with mean-reversion
     trendSteps++;
     if (trendSteps > 8 + Math.floor(Math.random() * 8)) {
-      trendDirection = Math.random() > 0.45 ? 1 : -1;
+      trendDirection = Math.random() > 0.48 ? 1 : -1;
       trendSteps = 0;
     }
 
-    const drift = trendDirection * volatility * 0.35;
-    const shock = (Math.random() - 0.49) * volatility * 1.8;
+    const drift = trendDirection * volatility * 0.25;
+    const shock = (Math.random() - 0.5) * volatility * 1.7;
     const delta = drift + shock;
 
     const open = currentPrice;
     let close = open * (1 + delta);
     if (close <= 0.0001) close = open;
 
-    const highExtra = Math.random() * volatility * open * 1.2;
-    const lowExtra = Math.random() * volatility * open * 1.2;
+    const highExtra = Math.random() * volatility * open * 1.15;
+    const lowExtra = Math.random() * volatility * open * 1.15;
 
     const high = Math.max(open, close) + highExtra;
     const low = Math.min(open, close) - lowExtra;
 
     // Realistic volume
-    const baseVol = asset.category === 'crypto' ? 45 : 120;
+    const volBase = (asset.category === 'crypto' ? 45 : 120) * tfConfig.volScale;
     const volMultiplier = 0.5 + Math.random() * 1.8 + Math.abs(delta) * 120;
-    const volume = Math.round(baseVol * volMultiplier);
+    const volume = Math.max(1, Math.round(volBase * volMultiplier));
 
-    candles.push({
+    rawCandles.push({
       time,
-      open: Number(open.toFixed(asset.precision)),
-      high: Number(high.toFixed(asset.precision)),
-      low: Number(low.toFixed(asset.precision)),
-      close: Number(close.toFixed(asset.precision)),
+      open,
+      high,
+      low,
+      close,
       volume,
     });
 
     currentPrice = close;
   }
 
-  return candles;
+  // Scale series so the latest candle closes right at targetEndPrice (or asset.basePrice)
+  const desiredEnd = targetEndPrice ?? asset.basePrice;
+  const lastGeneratedClose = rawCandles[rawCandles.length - 1]?.close || desiredEnd;
+  const scaleFactor = lastGeneratedClose > 0 ? desiredEnd / lastGeneratedClose : 1;
+
+  return rawCandles.map((c) => ({
+    time: c.time,
+    open: Number((c.open * scaleFactor).toFixed(asset.precision)),
+    high: Number((c.high * scaleFactor).toFixed(asset.precision)),
+    low: Number((c.low * scaleFactor).toFixed(asset.precision)),
+    close: Number((c.close * scaleFactor).toFixed(asset.precision)),
+    volume: c.volume,
+  }));
 }
 
 /**
