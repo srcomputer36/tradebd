@@ -40,7 +40,7 @@ export default function App() {
   });
 
   const [candles, setCandles] = useState<Candle[]>(() =>
-    generateCandles(TRADING_ASSETS[0], 220, '15m', TRADING_ASSETS[0].basePrice)
+    generateCandles(TRADING_ASSETS[0], 500, '15m', TRADING_ASSETS[0].basePrice)
   );
   const [isLiveTicking, setIsLiveTicking] = useState<boolean>(true);
   const [tickSpeed, setTickSpeed] = useState<number>(1);
@@ -126,18 +126,18 @@ export default function App() {
     document.title = `${t('appName')} - ${t('appTagline')}`;
   }, [t]);
 
-  // When selected asset changes, generate 220 candles anchored to that asset's current live price
+  // When selected asset changes, generate 500 candles anchored to that asset's current live price
   const handleSelectAsset = (asset: Asset) => {
     setSelectedAsset(asset);
     const targetPrice = assetPrices[asset.id] ?? asset.basePrice;
-    setCandles(generateCandles(asset, 220, timeframe, targetPrice));
+    setCandles(generateCandles(asset, 500, timeframe, targetPrice));
   };
 
-  // When timeframe changes on the chart, regenerate 220 candles for that timeframe anchored to live price
+  // When timeframe changes on the chart, regenerate 500 candles for that timeframe anchored to live price
   const handleChangeTimeframe = (tf: string) => {
     setTimeframe(tf);
     const targetPrice = assetPrices[selectedAsset.id] ?? selectedAsset.basePrice;
-    setCandles(generateCandles(selectedAsset, 220, tf, targetPrice));
+    setCandles(generateCandles(selectedAsset, 500, tf, targetPrice));
   };
 
   const lastCandle = candles[candles.length - 1];
@@ -180,8 +180,8 @@ export default function App() {
         });
 
         if (newCandle) {
-          // Keep 220 candles so EMA 200 always has full data
-          return [...prevCandles.slice(-220), newCandle];
+          // Keep 500 candles so users can pan far back in history and EMA 200 has full data
+          return [...prevCandles.slice(-500), newCandle];
         } else {
           return [...prevCandles.slice(0, -1), updatedCandle];
         }

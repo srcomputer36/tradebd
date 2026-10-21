@@ -22,11 +22,28 @@
           // ignore
         }
 
+        var origConsoleError = console.error ? console.error.bind(console) : null;
+        if (origConsoleError) {
+          console.error = function() {
+            var firstArg = arguments[0] ? String(arguments[0]) : '';
+            if (
+              firstArg.indexOf('failed to connect to websocket') !== -1 ||
+              firstArg.indexOf('WebSocket closed without opened') !== -1
+            ) {
+              return;
+            }
+            return origConsoleError.apply(console, arguments);
+          };
+        }
+
         window.addEventListener('error', function(event) {
           if (
             event &&
             ((event.filename && event.filename.indexOf('chrome-extension://') !== -1) ||
-              (event.message && event.message.indexOf('Cannot set property fetch') !== -1))
+              (event.message &&
+                (event.message.indexOf('Cannot set property fetch') !== -1 ||
+                  event.message.indexOf('WebSocket closed without opened') !== -1 ||
+                  event.message.indexOf('failed to connect to websocket') !== -1)))
           ) {
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -36,11 +53,13 @@
 
         window.addEventListener('unhandledrejection', function(event) {
           var reason = event && event.reason;
-          var stack = (reason && (reason.stack || reason.message)) || '';
+          var msg = (reason && (reason.stack || reason.message || String(reason))) || '';
           if (
-            typeof stack === 'string' &&
-            (stack.indexOf('chrome-extension://') !== -1 ||
-              stack.indexOf('Cannot set property fetch') !== -1)
+            typeof msg === 'string' &&
+            (msg.indexOf('chrome-extension://') !== -1 ||
+              msg.indexOf('Cannot set property fetch') !== -1 ||
+              msg.indexOf('WebSocket closed without opened') !== -1 ||
+              msg.indexOf('failed to connect to websocket') !== -1)
           ) {
             event.preventDefault();
             event.stopImmediatePropagation();

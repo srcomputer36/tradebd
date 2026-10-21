@@ -265,7 +265,7 @@ export const TRADING_ASSETS: Asset[] = [...CRYPTO_ASSETS, ...FOREX_ASSETS];
  */
 export function generateCandles(
   asset: Asset,
-  count: number = 220,
+  count: number = 500,
   timeframe: string = '15m',
   targetEndPrice?: number
 ): Candle[] {

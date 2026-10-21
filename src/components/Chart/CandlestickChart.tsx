@@ -9,14 +9,15 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  Layers,
   Play,
   Pause,
-  FastForward,
-  Maximize2,
   SlidersHorizontal,
-  Eye,
-  EyeOff,
+  ZoomIn,
+  ZoomOut,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  ChevronsRight,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -63,6 +64,75 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
 
+  // Zoom (visible candle count) & Pan (floating-point candle offset from latest) state
+  // Positive panOffset = looking back into history (older candles)
+  // Negative panOffset = shifting latest candle left to leave empty space on the right (like TradingView)
+  const MIN_VISIBLE_CANDLES = 16;
+  const MAX_VISIBLE_CANDLES = 200;
+  const DEFAULT_VISIBLE_CANDLES = 60;
+
+  const [visibleCandleCount, setVisibleCandleCount] = useState<number>(DEFAULT_VISIBLE_CANDLES);
+  const [panOffset, setPanOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  const dragStateRef = useRef<{
+    active: boolean;
+    startX: number;
+    startPanOffset: number;
+    pinchStartDist: number | null;
+    pinchStartVisible: number;
+  }>({
+    active: false,
+    startX: 0,
+    startPanOffset: 0,
+    pinchStartDist: null,
+    pinchStartVisible: DEFAULT_VISIBLE_CANDLES,
+  });
+
+  // Reset panOffset when switching asset or timeframe
+  useEffect(() => {
+    setPanOffset(0);
+  }, [asset.id, timeframe]);
+
+  const effectiveVisibleCount = Math.max(10, Math.min(candles.length, visibleCandleCount));
+  // Allow panning up to 50% of screen into future right-margin (negative offset) and all the way to candle 0
+  const minPanOffset = -Math.floor(effectiveVisibleCount * 0.5);
+  const maxPanOffset = Math.max(0, candles.length - Math.floor(effectiveVisibleCount * 0.3));
+  const clampedPanOffset = Math.max(minPanOffset, Math.min(panOffset, maxPanOffset));
+
+  const handleZoomIn = useCallback(() => {
+    setVisibleCandleCount((prev) => Math.max(MIN_VISIBLE_CANDLES, Math.round(prev * 0.78)));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setVisibleCandleCount((prev) =>
+      Math.min(
+        Math.max(MIN_VISIBLE_CANDLES, candles.length),
+        MAX_VISIBLE_CANDLES,
+        Math.round(prev * 1.28)
+      )
+    );
+  }, [candles.length]);
+
+  const handlePanLeft = useCallback(() => {
+    setPanOffset((prev) => {
+      const step = Math.max(6, Math.round(effectiveVisibleCount * 0.25));
+      return Math.min(maxPanOffset, prev + step);
+    });
+  }, [effectiveVisibleCount, maxPanOffset]);
+
+  const handlePanRight = useCallback(() => {
+    setPanOffset((prev) => {
+      const step = Math.max(6, Math.round(effectiveVisibleCount * 0.25));
+      return Math.max(minPanOffset, prev - step);
+    });
+  }, [effectiveVisibleCount, minPanOffset]);
+
+  const handleResetView = useCallback(() => {
+    setVisibleCandleCount(DEFAULT_VISIBLE_CANDLES);
+    setPanOffset(0);
+  }, []);
+
   // Close indicator menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -74,7 +144,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Calculate indicators memoized
+  // Calculate indicators memoized across all 500 candles
   const ema20 = useMemo(() => calculateEMA(candles, 20), [candles]);
   const ema50 = useMemo(() => calculateEMA(candles, 50), [candles]);
   const ema200 = useMemo(() => calculateEMA(candles, 200), [candles]);
@@ -92,7 +162,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const priceChangePct = prevCandle ? (priceChange / prevCandle.close) * 100 : 0;
   const isUp = priceChange >= 0;
 
-  // Render chart
+  // Render chart with pixel-smooth fractional panning
   const renderChart = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !containerRef.current) return;
@@ -125,67 +195,64 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     const subTop = mainHeight + 10;
     const subHeight = height - subTop - 18;
     const rightPriceBarWidth = 68;
-    const chartWidth = width - rightPriceBarWidth;
+    const chartWidth = Math.max(100, width - rightPriceBarWidth);
 
-    // Visible window: last 60 candles
-    const visibleCount = Math.min(candles.length, 65);
-    const startIndex = candles.length - visibleCount;
-    const visibleCandles = candles.slice(startIndex);
-    const visibleEma20 = ema20.slice(startIndex);
-    const visibleEma50 = ema50.slice(startIndex);
-    const visibleEma200 = ema200.slice(startIndex);
-    const visibleBbUpper = bollinger.upper.slice(startIndex);
-    const visibleBbLower = bollinger.lower.slice(startIndex);
-    const visibleBbMiddle = bollinger.middle.slice(startIndex);
-    const visibleRsi = rsi.slice(startIndex);
+    const visibleCount = effectiveVisibleCount;
+    const candleWidth = chartWidth / visibleCount;
+    const barWidth = Math.max(2, candleWidth * 0.68);
 
-    // Compute price range
+    // Floating-point base index at the left edge of the screen
+    const baseStart = candles.length - visibleCount - clampedPanOffset;
+    const firstGlobalIdx = Math.max(0, Math.floor(baseStart) - 1);
+    const lastGlobalIdx = Math.min(candles.length - 1, Math.ceil(baseStart + visibleCount) + 1);
+
+    // Helper: convert global candle index g to horizontal X center
+    const globalIdxToX = (g: number) => (g - baseStart + 0.5) * candleWidth;
+
+    // Compute price range for visible candles
     let minPrice = Infinity;
     let maxPrice = -Infinity;
     let maxVolume = 0;
 
-    for (const c of visibleCandles) {
+    for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+      const c = candles[g];
+      if (!c) continue;
       if (c.low < minPrice) minPrice = c.low;
       if (c.high > maxPrice) maxPrice = c.high;
       if (c.volume > maxVolume) maxVolume = c.volume;
-    }
 
-    // Include Bollinger in min/max if active
-    if (indicators.showBollinger) {
-      for (let i = 0; i < visibleBbUpper.length; i++) {
-        const u = visibleBbUpper[i];
-        const l = visibleBbLower[i];
+      if (indicators.showBollinger) {
+        const u = bollinger.upper[g];
+        const l = bollinger.lower[g];
         if (u !== null && u > maxPrice) maxPrice = u;
         if (l !== null && l < minPrice) minPrice = l;
       }
-    }
 
-    // Include EMA 200 in min/max if active so macro trend line is always visible
-    if (indicators.showEMA200) {
-      for (let i = 0; i < visibleEma200.length; i++) {
-        const v = visibleEma200[i];
-        if (v !== null) {
-          if (v > maxPrice) maxPrice = v;
-          if (v < minPrice) minPrice = v;
+      if (indicators.showEMA200) {
+        const v200 = ema200[g];
+        if (v200 !== null) {
+          if (v200 > maxPrice) maxPrice = v200;
+          if (v200 < minPrice) minPrice = v200;
         }
       }
     }
 
-    // Add 4% vertical padding
+    if (!isFinite(minPrice) || !isFinite(maxPrice)) {
+      minPrice = currentPrice * 0.98;
+      maxPrice = currentPrice * 1.02;
+    }
+
+    // Add 5% vertical padding
     const pricePadding = (maxPrice - minPrice) * 0.05 || 1;
     minPrice -= pricePadding;
     maxPrice += pricePadding;
     const priceRange = maxPrice - minPrice || 1;
 
-    // Helper functions
     const priceToY = (price: number) => {
       return mainHeight - ((price - minPrice) / priceRange) * (mainHeight - 30) - 15;
     };
 
-    const candleWidth = chartWidth / visibleCount;
-    const barWidth = Math.max(2, candleWidth * 0.68);
-
-    // 1. Draw horizontal price grid & labels
+    // 1. Draw horizontal price grid & right-axis labels
     const gridSteps = 5;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
@@ -205,6 +272,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.fillText(p.toFixed(asset.precision), chartWidth + 6, y + 3);
     }
 
+    // Clip main chart drawing region to [0, chartWidth] so panned candles never overlap price axis
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, height);
+    ctx.clip();
+
     // 2. Draw Key Support & Resistance Levels
     if (indicators.showKeyLevels) {
       for (const level of keyLevels) {
@@ -212,18 +285,20 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           const y = priceToY(level.price);
           ctx.beginPath();
           ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = level.type === 'SUPPORT' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+          ctx.strokeStyle =
+            level.type === 'SUPPORT' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
           ctx.lineWidth = 1.2;
           ctx.moveTo(0, y);
           ctx.lineTo(chartWidth, y);
           ctx.stroke();
           ctx.setLineDash([]);
 
-          // Tag
           ctx.fillStyle = level.type === 'SUPPORT' ? '#10b981' : '#ef4444';
           ctx.font = '9px "JetBrains Mono", monospace';
           ctx.fillText(
-            `${level.type === 'SUPPORT' ? 'Support' : 'Resist'} $${level.price.toFixed(asset.precision)}`,
+            `${level.type === 'SUPPORT' ? 'Support' : 'Resist'} $${level.price.toFixed(
+              asset.precision
+            )}`,
             6,
             y - 4
           );
@@ -233,13 +308,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // 3. Draw Bollinger Bands Area & Lines
     if (indicators.showBollinger) {
-      // Shaded cloud
       ctx.beginPath();
       let started = false;
-      for (let i = 0; i < visibleCount; i++) {
-        const u = visibleBbUpper[i];
+      for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+        const u = bollinger.upper[g];
         if (u !== null) {
-          const x = i * candleWidth + candleWidth / 2;
+          const x = globalIdxToX(g);
           const y = priceToY(u);
           if (!started) {
             ctx.moveTo(x, y);
@@ -249,10 +323,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           }
         }
       }
-      for (let i = visibleCount - 1; i >= 0; i--) {
-        const l = visibleBbLower[i];
+      for (let g = lastGlobalIdx; g >= firstGlobalIdx; g--) {
+        const l = bollinger.lower[g];
         if (l !== null) {
-          const x = i * candleWidth + candleWidth / 2;
+          const x = globalIdxToX(g);
           const y = priceToY(l);
           ctx.lineTo(x, y);
         }
@@ -261,17 +335,16 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.fillStyle = 'rgba(59, 130, 246, 0.05)';
       ctx.fill();
 
-      // Lines: Upper & Lower
-      const drawLine = (arr: (number | null)[], color: string, dash: number[] = []) => {
+      const drawGlobalLine = (arr: (number | null)[], color: string, dash: number[] = []) => {
         ctx.beginPath();
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.setLineDash(dash);
         let first = true;
-        for (let i = 0; i < visibleCount; i++) {
-          const v = arr[i];
+        for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+          const v = arr[g];
           if (v !== null) {
-            const x = i * candleWidth + candleWidth / 2;
+            const x = globalIdxToX(g);
             const y = priceToY(v);
             if (first) {
               ctx.moveTo(x, y);
@@ -285,9 +358,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         ctx.setLineDash([]);
       };
 
-      drawLine(visibleBbUpper, 'rgba(96, 165, 250, 0.6)');
-      drawLine(visibleBbMiddle, 'rgba(147, 197, 253, 0.4)', [2, 2]);
-      drawLine(visibleBbLower, 'rgba(96, 165, 250, 0.6)');
+      drawGlobalLine(bollinger.upper, 'rgba(96, 165, 250, 0.6)');
+      drawGlobalLine(bollinger.middle, 'rgba(147, 197, 253, 0.4)', [2, 2]);
+      drawGlobalLine(bollinger.lower, 'rgba(96, 165, 250, 0.6)');
     }
 
     // 4. Draw EMAs
@@ -296,10 +369,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.strokeStyle = color;
       ctx.lineWidth = strokeWidth;
       let first = true;
-      for (let i = 0; i < visibleCount; i++) {
-        const v = arr[i];
+      for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+        const v = arr[g];
         if (v !== null) {
-          const x = i * candleWidth + candleWidth / 2;
+          const x = globalIdxToX(g);
           const y = priceToY(v);
           if (first) {
             ctx.moveTo(x, y);
@@ -312,30 +385,33 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.stroke();
     };
 
-    if (indicators.showEMA20) drawEma(visibleEma20, '#06b6d4', 1.5); // Cyan
-    if (indicators.showEMA50) drawEma(visibleEma50, '#f97316', 1.5); // Orange
-    if (indicators.showEMA200) drawEma(visibleEma200, '#a855f7', 1.8); // Purple
+    if (indicators.showEMA20) drawEma(ema20, '#06b6d4', 1.5); // Cyan
+    if (indicators.showEMA50) drawEma(ema50, '#f97316', 1.5); // Orange
+    if (indicators.showEMA200) drawEma(ema200, '#a855f7', 1.8); // Purple
 
     // 5. Draw Volume bars at bottom of main chart
     if (indicators.showVolume && maxVolume > 0) {
       const volHeightMax = mainHeight * 0.16;
-      for (let i = 0; i < visibleCount; i++) {
-        const c = visibleCandles[i];
+      for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+        const c = candles[g];
+        if (!c) continue;
         const isGreen = c.close >= c.open;
-        const x = i * candleWidth + (candleWidth - barWidth) / 2;
+        const xCenter = globalIdxToX(g);
+        const xLeft = xCenter - barWidth / 2;
         const h = (c.volume / maxVolume) * volHeightMax;
         const y = mainHeight - h;
 
         ctx.fillStyle = isGreen ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)';
-        ctx.fillRect(x, y, barWidth, h);
+        ctx.fillRect(xLeft, y, barWidth, h);
       }
     }
 
     // 6. Draw Candlesticks (Wicks and Bodies)
-    for (let i = 0; i < visibleCount; i++) {
-      const c = visibleCandles[i];
+    for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+      const c = candles[g];
+      if (!c) continue;
       const isGreen = c.close >= c.open;
-      const xCenter = i * candleWidth + candleWidth / 2;
+      const xCenter = globalIdxToX(g);
       const xLeft = xCenter - barWidth / 2;
 
       const yOpen = priceToY(c.open);
@@ -345,7 +421,6 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
       const color = isGreen ? '#10b981' : '#ef4444';
 
-      // Upper & Lower Wick
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.2;
@@ -353,7 +428,6 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.lineTo(xCenter, yLow);
       ctx.stroke();
 
-      // Candle body
       const bodyTop = Math.min(yOpen, yClose);
       const bodyHeight = Math.max(Math.abs(yClose - yOpen), 1.5);
 
@@ -372,35 +446,23 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Price badge on right axis
-    ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
-    ctx.fillRect(chartWidth + 2, currentY - 9, rightPriceBarWidth - 4, 18);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(currentPrice.toFixed(asset.precision), chartWidth + 7, currentY + 4);
-
     // 8. Render Sub-Chart: RSI (14)
     if (hasRSI && subHeight > 20) {
-      // Sub-chart border and divider
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, subTop - 5);
-      ctx.lineTo(width, subTop - 5);
+      ctx.lineTo(chartWidth, subTop - 5);
       ctx.stroke();
 
-      // RSI Guide Lines: 70 (Overbought), 50 (Neutral), 30 (Oversold)
       const rsiToY = (val: number) => subTop + (1 - val / 100) * subHeight;
-
       const y70 = rsiToY(70);
       const y50 = rsiToY(50);
       const y30 = rsiToY(30);
 
-      // Shaded zone between 30 and 70
       ctx.fillStyle = 'rgba(148, 163, 184, 0.03)';
       ctx.fillRect(0, y70, chartWidth, y30 - y70);
 
-      // 70 line
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
       ctx.setLineDash([2, 3]);
@@ -408,14 +470,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.lineTo(chartWidth, y70);
       ctx.stroke();
 
-      // 50 line
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
       ctx.moveTo(0, y50);
       ctx.lineTo(chartWidth, y50);
       ctx.stroke();
 
-      // 30 line
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
       ctx.moveTo(0, y30);
@@ -423,22 +483,15 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // RSI axis labels
-      ctx.fillStyle = '#64748b';
-      ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.fillText('70', chartWidth + 6, y70 + 3);
-      ctx.fillText('50', chartWidth + 6, y50 + 3);
-      ctx.fillText('30', chartWidth + 6, y30 + 3);
-
       // RSI Line
       ctx.beginPath();
-      ctx.strokeStyle = '#a855f7'; // Purple line for RSI
+      ctx.strokeStyle = '#a855f7';
       ctx.lineWidth = 1.5;
       let firstRsi = true;
-      for (let i = 0; i < visibleCount; i++) {
-        const val = visibleRsi[i];
-        if (val !== null) {
-          const x = i * candleWidth + candleWidth / 2;
+      for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
+        const val = rsi[g];
+        if (val !== null && val !== undefined) {
+          const x = globalIdxToX(g);
           const y = rsiToY(val);
           if (firstRsi) {
             ctx.moveTo(x, y);
@@ -450,89 +503,132 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       }
       ctx.stroke();
 
-      // Current RSI label
-      const latestRsi = rsi[rsi.length - 1];
+      const latestVisibleRsi = rsi[Math.min(candles.length - 1, Math.max(0, lastGlobalIdx))];
       ctx.fillStyle = '#c084fc';
       ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillText(`RSI (14): ${latestRsi ? latestRsi.toFixed(1) : '--'}`, 8, subTop + 14);
+      ctx.fillText(
+        `RSI (14): ${latestVisibleRsi ? latestVisibleRsi.toFixed(1) : '--'}`,
+        8,
+        subTop + 14
+      );
+    }
+
+    // 8b. Draw Bottom Time Axis Labels
+    const timeAxisY = height - 4;
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    const timeTickStep = Math.max(1, Math.floor(visibleCount / 6));
+    const startTick = Math.ceil(firstGlobalIdx / timeTickStep) * timeTickStep;
+    for (let g = startTick; g <= lastGlobalIdx; g += timeTickStep) {
+      const c = candles[g];
+      if (!c) continue;
+      const x = globalIdxToX(g);
+      if (x < 25 || x > chartWidth - 25) continue;
+      const label =
+        timeframe === '1D'
+          ? new Date(c.time).toLocaleDateString([], { month: 'short', day: 'numeric' })
+          : new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      ctx.fillText(label, x, timeAxisY);
+    }
+    ctx.textAlign = 'left';
+
+    // Restore clip so right-axis badges can draw outside chartWidth
+    ctx.restore();
+
+    // Right-axis badges (Current Price & RSI 70/50/30)
+    if (currentY >= 10 && currentY <= mainHeight) {
+      ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
+      ctx.fillRect(chartWidth + 2, currentY - 9, rightPriceBarWidth - 4, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillText(currentPrice.toFixed(asset.precision), chartWidth + 7, currentY + 4);
+    }
+
+    if (hasRSI && subHeight > 20) {
+      const rsiToY = (val: number) => subTop + (1 - val / 100) * subHeight;
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillText('70', chartWidth + 6, rsiToY(70) + 3);
+      ctx.fillText('50', chartWidth + 6, rsiToY(50) + 3);
+      ctx.fillText('30', chartWidth + 6, rsiToY(30) + 3);
     }
 
     // 9. Interactive Crosshair & Tooltip
-    if (hoverIndex !== null && hoverCoord && hoverIndex >= 0 && hoverIndex < visibleCount) {
-      const activeCandle = visibleCandles[hoverIndex];
-      const hx = hoverIndex * candleWidth + candleWidth / 2;
+    if (hoverIndex !== null && hoverCoord && hoverIndex >= 0 && hoverIndex < candles.length) {
+      const activeCandle = candles[hoverIndex];
+      const hx = globalIdxToX(hoverIndex);
       const hy = hoverCoord.y;
 
-      // Vertical crosshair
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(hx, 0);
-      ctx.lineTo(hx, height);
-      ctx.stroke();
-
-      // Horizontal crosshair on main
-      if (hy <= mainHeight) {
+      if (hx >= 0 && hx <= chartWidth) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
         ctx.beginPath();
-        ctx.moveTo(0, hy);
-        ctx.lineTo(chartWidth, hy);
+        ctx.moveTo(hx, 0);
+        ctx.lineTo(hx, height);
         ctx.stroke();
 
-        // Price at cursor
-        const cursorPrice = minPrice + ((mainHeight - hy) / (mainHeight - 30)) * priceRange;
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(chartWidth + 2, hy - 9, rightPriceBarWidth - 4, 18);
-        ctx.fillStyle = '#ffffff';
+        if (hy <= mainHeight) {
+          ctx.beginPath();
+          ctx.moveTo(0, hy);
+          ctx.lineTo(chartWidth, hy);
+          ctx.stroke();
+
+          const cursorPrice = minPrice + ((mainHeight - hy) / (mainHeight - 30)) * priceRange;
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(chartWidth + 2, hy - 9, rightPriceBarWidth - 4, 18);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.fillText(cursorPrice.toFixed(asset.precision), chartWidth + 7, hy + 4);
+        }
+        ctx.setLineDash([]);
+
+        // Top Floating OHLCV Bar
+        const dateStr = new Date(activeCandle.time).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const cDiff = activeCandle.close - activeCandle.open;
+        const cDiffPct = (cDiff / activeCandle.open) * 100;
+        const candleColor = cDiff >= 0 ? '#10b981' : '#ef4444';
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(6, 6, Math.min(width - 100, 480), 22);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeRect(6, 6, Math.min(width - 100, 480), 22);
+
         ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillText(cursorPrice.toFixed(asset.precision), chartWidth + 7, hy + 4);
+        ctx.fillStyle = '#94a3b8';
+        let textX = 14;
+        ctx.fillText(`${dateStr} ·`, textX, 21);
+        textX += 62;
+
+        ctx.fillText(`O:`, textX, 21);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(`${activeCandle.open.toFixed(asset.precision)}`, textX + 14, 21);
+        textX += 68;
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`H:`, textX, 21);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(`${activeCandle.high.toFixed(asset.precision)}`, textX + 14, 21);
+        textX += 68;
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`L:`, textX, 21);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(`${activeCandle.low.toFixed(asset.precision)}`, textX + 14, 21);
+        textX += 68;
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`C:`, textX, 21);
+        ctx.fillStyle = candleColor;
+        ctx.fillText(`${activeCandle.close.toFixed(asset.precision)}`, textX + 14, 21);
+        textX += 70;
+
+        ctx.fillText(`${cDiff >= 0 ? '+' : ''}${cDiffPct.toFixed(2)}%`, textX, 21);
       }
-      ctx.setLineDash([]);
-
-      // Top Floating OHLCV Bar
-      const dateStr = new Date(activeCandle.time).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const cDiff = activeCandle.close - activeCandle.open;
-      const cDiffPct = (cDiff / activeCandle.open) * 100;
-      const candleColor = cDiff >= 0 ? '#10b981' : '#ef4444';
-
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(6, 6, Math.min(width - 100, 480), 22);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.strokeRect(6, 6, Math.min(width - 100, 480), 22);
-
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#94a3b8';
-      let textX = 14;
-      ctx.fillText(`${dateStr} ·`, textX, 21);
-      textX += 62;
-
-      ctx.fillText(`O:`, textX, 21);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(`${activeCandle.open.toFixed(asset.precision)}`, textX + 14, 21);
-      textX += 68;
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(`H:`, textX, 21);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(`${activeCandle.high.toFixed(asset.precision)}`, textX + 14, 21);
-      textX += 68;
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(`L:`, textX, 21);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(`${activeCandle.low.toFixed(asset.precision)}`, textX + 14, 21);
-      textX += 68;
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(`C:`, textX, 21);
-      ctx.fillStyle = candleColor;
-      ctx.fillText(`${activeCandle.close.toFixed(asset.precision)}`, textX + 14, 21);
-      textX += 70;
-
-      ctx.fillText(`${cDiff >= 0 ? '+' : ''}${cDiffPct.toFixed(2)}%`, textX, 21);
     }
   }, [
     candles,
@@ -548,6 +644,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     hoverCoord,
     currentPrice,
     isUp,
+    effectiveVisibleCount,
+    clampedPanOffset,
+    timeframe,
   ]);
 
   // Redraw on window resize or data update
@@ -558,21 +657,95 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [renderChart]);
 
-  // Mouse move handler for crosshair
+  // Global window mousemove & mouseup listeners while dragging so cursor leaving canvas never breaks panning
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!dragStateRef.current.active || !canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const chartWidth = Math.max(100, rect.width - 68);
+      const candleWidth = chartWidth / effectiveVisibleCount;
+
+      const deltaX = e.clientX - dragStateRef.current.startX;
+      // Use floating-point candle delta for silky-smooth pixel panning
+      const candlesDelta = deltaX / candleWidth;
+      const nextOffset = Math.max(
+        minPanOffset,
+        Math.min(maxPanOffset, dragStateRef.current.startPanOffset + candlesDelta)
+      );
+      setPanOffset(nextOffset);
+    };
+
+    const handleWindowMouseUp = () => {
+      dragStateRef.current.active = false;
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [isDragging, effectiveVisibleCount, minPanOffset, maxPanOffset]);
+
+  // Attach native non-passive wheel listener on canvas for smooth Mouse Wheel Zoom In/Out & Horizontal Pan
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Shift+Wheel or horizontal trackpad gesture pans left/right
+      if (e.shiftKey || (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 2)) {
+        const rawDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        const candlesMoved = -(rawDelta / 18);
+        setPanOffset((prev) => Math.max(minPanOffset, Math.min(maxPanOffset, prev + candlesMoved)));
+        return;
+      }
+
+      if (e.deltaY < 0) {
+        setVisibleCandleCount((prev) => Math.max(MIN_VISIBLE_CANDLES, Math.round(prev * 0.86)));
+      } else if (e.deltaY > 0) {
+        setVisibleCandleCount((prev) =>
+          Math.min(
+            Math.max(MIN_VISIBLE_CANDLES, candles.length),
+            MAX_VISIBLE_CANDLES,
+            Math.round(prev * 1.16)
+          )
+        );
+      }
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, [candles.length, minPanOffset, maxPanOffset]);
+
+  // Mouse Down -> Start dragging to pan left/right
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    dragStateRef.current.active = true;
+    dragStateRef.current.startX = e.clientX;
+    dragStateRef.current.startPanOffset = clampedPanOffset;
+    setIsDragging(true);
+  };
+
+  // Mouse Move on canvas -> Update crosshair when hovering
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !containerRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const visibleCount = Math.min(candles.length, 65);
     const rightPriceBarWidth = 68;
-    const chartWidth = rect.width - rightPriceBarWidth;
-    const candleWidth = chartWidth / visibleCount;
+    const chartWidth = Math.max(100, rect.width - rightPriceBarWidth);
+    const candleWidth = chartWidth / effectiveVisibleCount;
+    const baseStart = candles.length - effectiveVisibleCount - clampedPanOffset;
 
-    const index = Math.floor(x / candleWidth);
-    if (index >= 0 && index < visibleCount) {
-      setHoverIndex(index);
+    const globalIndex = Math.round(baseStart + x / candleWidth - 0.5);
+    if (x >= 0 && x <= chartWidth && globalIndex >= 0 && globalIndex < candles.length) {
+      setHoverIndex(globalIndex);
       setHoverCoord({ x, y });
     } else {
       setHoverIndex(null);
@@ -580,9 +753,68 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     }
   };
 
+  const handleMouseUp = () => {
+    dragStateRef.current.active = false;
+    setIsDragging(false);
+  };
+
   const handleMouseLeave = () => {
     setHoverIndex(null);
     setHoverCoord(null);
+  };
+
+  // Touch handlers for Mobile Drag Panning & Two-Finger Pinch Zoom
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      dragStateRef.current.active = true;
+      dragStateRef.current.startX = e.touches[0].clientX;
+      dragStateRef.current.startPanOffset = clampedPanOffset;
+      dragStateRef.current.pinchStartDist = null;
+      setIsDragging(true);
+    } else if (e.touches.length === 2) {
+      dragStateRef.current.active = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      dragStateRef.current.pinchStartDist = Math.hypot(dx, dy);
+      dragStateRef.current.pinchStartVisible = visibleCandleCount;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const chartWidth = Math.max(100, rect.width - 68);
+    const candleWidth = chartWidth / effectiveVisibleCount;
+
+    if (e.touches.length === 2 && dragStateRef.current.pinchStartDist) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 10) {
+        const scale = dragStateRef.current.pinchStartDist / dist;
+        const nextCount = Math.round(dragStateRef.current.pinchStartVisible * scale);
+        setVisibleCandleCount(
+          Math.max(
+            MIN_VISIBLE_CANDLES,
+            Math.min(Math.max(MIN_VISIBLE_CANDLES, candles.length), MAX_VISIBLE_CANDLES, nextCount)
+          )
+        );
+      }
+    } else if (e.touches.length === 1 && dragStateRef.current.active) {
+      const deltaX = e.touches[0].clientX - dragStateRef.current.startX;
+      const candlesDelta = deltaX / candleWidth;
+      const nextOffset = Math.max(
+        minPanOffset,
+        Math.min(maxPanOffset, dragStateRef.current.startPanOffset + candlesDelta)
+      );
+      setPanOffset(nextOffset);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    dragStateRef.current.active = false;
+    dragStateRef.current.pinchStartDist = null;
+    setIsDragging(false);
   };
 
   // Technical Summary Interpretation
@@ -652,7 +884,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             <button
               key={tf}
               onClick={() => onChangeTimeframe(tf)}
-              className={`px-2 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap ${
+              className={`px-2 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap cursor-pointer ${
                 timeframe === tf
                   ? 'bg-slate-700 text-white shadow-xs font-semibold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -669,7 +901,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           <button
             onClick={onToggleLive}
             title={isLiveTicking ? t('livePaused') : t('liveRunning')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors border ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors border cursor-pointer ${
               isLiveTicking
                 ? 'bg-emerald-950/70 text-emerald-400 border-emerald-800/80 hover:bg-emerald-900'
                 : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
@@ -694,7 +926,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
               <button
                 key={speed}
                 onClick={() => onChangeSpeed(speed)}
-                className={`px-1.5 py-0.5 rounded ${
+                className={`px-1.5 py-0.5 rounded cursor-pointer ${
                   tickSpeed === speed
                     ? 'bg-blue-600 text-white font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
@@ -833,34 +1065,128 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       </div>
 
       {/* Main Interactive Canvas Area */}
-      <div ref={containerRef} className="relative flex-1 w-full h-[460px] min-h-[380px]">
+      <div ref={containerRef} className="relative flex-1 w-full h-[440px] min-h-[360px] select-none">
         <canvas
           ref={canvasRef}
+          onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          className="absolute inset-0 cursor-crosshair block"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`absolute inset-0 block touch-none ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
         />
 
-        {/* Quick Quick-Trade Entry Shortcuts floating in corner */}
+        {/* Quick-Trade Entry Shortcuts floating in bottom-left corner */}
         {onSelectPriceForOrder && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-900/90 backdrop-blur-xs p-1.5 rounded-lg border border-slate-800 text-xs">
+          <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-900/90 backdrop-blur-xs p-1.5 rounded-lg border border-slate-800 text-xs z-10">
             <span className="text-slate-400 text-[11px] font-medium hidden sm:inline">
               {t('currentPrice')}:
             </span>
             <button
               onClick={() => onSelectPriceForOrder(currentPrice, 'LONG')}
-              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-[11px] transition-colors"
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-[11px] transition-colors cursor-pointer"
             >
               {t('buyAtCurrent')} (${currentPrice.toFixed(asset.precision)})
             </button>
             <button
               onClick={() => onSelectPriceForOrder(currentPrice, 'SHORT')}
-              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded text-[11px] transition-colors"
+              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded text-[11px] transition-colors cursor-pointer"
             >
               {t('sellAtCurrent')} (${currentPrice.toFixed(asset.precision)})
             </button>
           </div>
         )}
+      </div>
+
+      {/* Dedicated Interactive Timeline Pan & Zoom Bar (আগে-পিছনে ও জুম কন্ট্রোল বার) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[#0f172a] border-t border-slate-800 text-xs select-none">
+        {/* Left: Pan Backward / Forward Buttons & Timeline Slider */}
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+          <button
+            type="button"
+            onClick={handlePanLeft}
+            disabled={clampedPanOffset >= maxPanOffset}
+            className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 font-semibold rounded border border-slate-700 transition-colors cursor-pointer shrink-0"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{language === 'bn' ? 'পিছে (পুরনো)' : 'Back'}</span>
+          </button>
+
+          {/* Timeline Scrubber Slider (Left = Oldest history, Right = Latest/Future) */}
+          <div className="flex-1 flex items-center gap-2 px-1">
+            <input
+              type="range"
+              min={-maxPanOffset}
+              max={-minPanOffset}
+              step={1}
+              value={Math.round(-clampedPanOffset)}
+              onChange={(e) => setPanOffset(-parseFloat(e.target.value))}
+              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              title={
+                language === 'bn'
+                  ? 'স্লাইডার টেনে চার্ট আগে বা পিছনে নিন'
+                  : 'Drag slider to scrub chart backward or forward'
+              }
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handlePanRight}
+            disabled={clampedPanOffset <= minPanOffset}
+            className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 font-semibold rounded border border-slate-700 transition-colors cursor-pointer shrink-0"
+          >
+            <span>{language === 'bn' ? 'সামনে (নতুন)' : 'Forward'}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
+          </button>
+        </div>
+
+        {/* Right: Zoom Out / Zoom In & Reset to Live Buttons */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            disabled={visibleCandleCount >= Math.min(MAX_VISIBLE_CANDLES, candles.length)}
+            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded border border-slate-700 transition-colors cursor-pointer"
+            title={language === 'bn' ? 'জুম আউট' : 'Zoom Out'}
+          >
+            <ZoomOut className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">{language === 'bn' ? 'জুম -' : 'Zoom -'}</span>
+          </button>
+
+          <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded font-mono text-[11px] text-cyan-400 font-bold">
+            {effectiveVisibleCount} {language === 'bn' ? 'ক্যান্ডেল' : 'bars'}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            disabled={visibleCandleCount <= MIN_VISIBLE_CANDLES}
+            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded border border-slate-700 transition-colors cursor-pointer"
+            title={language === 'bn' ? 'জুম ইন' : 'Zoom In'}
+          >
+            <ZoomIn className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">{language === 'bn' ? 'জুম +' : 'Zoom +'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResetView}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer ${
+              Math.abs(clampedPanOffset) > 0.5 || visibleCandleCount !== DEFAULT_VISIBLE_CANDLES
+                ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+            }`}
+            title={language === 'bn' ? 'লাইভ চার্টে রিসেট করুন' : 'Reset to Live Chart'}
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>{language === 'bn' ? 'লাইভ রিসেট' : 'Reset'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Chart Footer with Live Market Technical Reading */}
