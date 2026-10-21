@@ -1,0 +1,6 @@
+{
+  "name": "TradeBangla - ট্রেডিং একাডেমি ও অ্যানালাইসিস প্ল্যাটফর্ম",
+  "description": "একটি আধুনিক বাংলা ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস ও ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
