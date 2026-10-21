@@ -1,6 +1,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/$USER/public_html/
-    - /bin/cp -Rf dist/* $DEPLOYPATH 2>/dev/null || true
-    - /bin/cp -f dist/.htaccess $DEPLOYPATH 2>/dev/null || true
+    - export DEPLOYPATH=$HOME/public_html/
+    - /bin/cp -Rf dist/* $DEPLOYPATH
+    - /bin/cp -f dist/.htaccess $DEPLOYPATH
+    - /bin/rm -rf $DEPLOYPATH/assets/aistudio

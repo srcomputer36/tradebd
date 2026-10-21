@@ -1,6 +1,8 @@
 node_modules/
 build/
-dist/
+server.js
+public/assets/aistudio/
+dist/assets/aistudio/
 coverage/
 .DS_Store
 *.log
