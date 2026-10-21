@@ -2,6 +2,7 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/tradebdo/public_html/
-    - /bin/cp -Rf dist/* $DEPLOYPATH
-    - /bin/cp -f dist/.htaccess $DEPLOYPATH
-    - /bin/rm -rf $DEPLOYPATH/assets/aistudio
+    - /bin/rm -f $DEPLOYPATH/welcome.php $DEPLOYPATH/index.php $DEPLOYPATH/default.html
+    - /bin/cp -f cpanel-build/index.html $DEPLOYPATH/index.html
+    - /bin/cp -f public/.htaccess $DEPLOYPATH/.htaccess
+    - /bin/cp -Rf src $DEPLOYPATH/

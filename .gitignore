@@ -1,8 +1,9 @@
 node_modules/
 build/
+dist/
 server.js
 public/assets/aistudio/
-dist/assets/aistudio/
+public/tradebd-cpanel.tar.gz
 coverage/
 .DS_Store
 *.log

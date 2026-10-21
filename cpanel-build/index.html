@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        try {
+          var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+          var currentFetch = nativeFetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function () {
+              return currentFetch;
+            },
+            set: function (newFetch) {
+              currentFetch = newFetch;
+            },
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <title>Tradebd - ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম</title>
+    <meta
+      name="description"
+      content="Tradebd - প্রফেশনাল আন্তর্জাতিক ও বাংলা ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।"
+    />
+    <meta property="og:title" content="Tradebd - ট্রেডিং একাডেমি ও অ্যানালাইসিস প্ল্যাটফর্ম" />
+    <meta
+      property="og:description"
+      content="Tradebd - প্রফেশনাল আন্তর্জাতিক ও বাংলা ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --font-sans: "Plus Jakarta Sans", "Hind Siliguri", system-ui, -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+      body {
+        background-color: #0b0f19;
+        color: #e2e8f0;
+        font-family: "Plus Jakarta Sans", "Hind Siliguri", system-ui, -apple-system, sans-serif;
+      }
+      * {
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.0.0",
+          "react-dom": "https://esm.sh/react-dom@19.0.0",
+          "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+          "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+          "lucide-react": "https://esm.sh/lucide-react@0.546.0?external=react",
+          "motion/react": "https://esm.sh/motion@12.23.24/react?external=react,react-dom"
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-[#0b0f19] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div id="root">
+      <div class="min-h-screen flex items-center justify-center bg-[#0b0f19] text-emerald-400 font-bold text-sm tracking-wide">
+        Tradebd লোড হচ্ছে...
+      </div>
+    </div>
+    <script type="module">
+      import { transform } from 'https://esm.sh/sucrase@3.35.0';
+
+      const files = [
+        'types/trading.ts',
+        'i18n/translations.ts',
+        'context/LanguageContext.tsx',
+        'data/assets.ts',
+        'data/academyData.ts',
+        'data/patternsData.ts',
+        'utils/indicators.ts',
+        'components/Patterns/PatternSvg.tsx',
+        'components/Patterns/PatternGallery.tsx',
+        'components/Navbar.tsx',
+        'components/MarketSectionsBar.tsx',
+        'components/Chart/CandlestickChart.tsx',
+        'components/Simulator/PaperTradingPanel.tsx',
+        'components/Academy/AcademyView.tsx',
+        'components/Calculator/RiskCalculator.tsx',
+        'components/Mentor/AiMentorView.tsx',
+        'App.tsx',
+        'main.tsx',
+      ];
+
+      function normalizePath(dir, rel) {
+        const parts = (dir === '.' ? [] : dir.split('/')).concat(rel.split('/'));
+        const out = [];
+        for (const p of parts) {
+          if (!p || p === '.') continue;
+          if (p === '..') out.pop();
+          else out.push(p);
+        }
+        return out.join('/');
+      }
+
+      async function boot() {
+        const sources = await Promise.all(
+          files.map(async (f) => {
+            const res = await fetch('/src/' + f);
+            const text = await res.text();
+            return [f, text];
+          })
+        );
+
+        const blobUrls = {};
+        for (const [f, rawSource] of sources) {
+          const key = f.replace(/\.(tsx|ts)$/, '');
+          const dir = key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '.';
+          const cleaned = rawSource.replace(/import\s+['"]\.\/index\.css['"];?/g, '');
+          let compiled = transform(cleaned, {
+            transforms: ['typescript', 'jsx'],
+            jsxRuntime: 'automatic',
+            production: true,
+          }).code;
+
+          compiled = compiled.replace(
+            /(from\s+['"])(\.[^'"]+)(['"])/g,
+            (match, prefix, relPath, suffix) => {
+              const targetKey = normalizePath(dir, relPath.replace(/\.(tsx|ts|js)$/, ''));
+              const blobUrl = blobUrls[targetKey];
+              return blobUrl ? prefix + blobUrl + suffix : match;
+            }
+          );
+
+          if (!compiled.trim()) compiled = 'export {};';
+          blobUrls[key] = URL.createObjectURL(
+            new Blob([compiled], { type: 'text/javascript' })
+          );
+        }
+
+        await import(blobUrls['main']);
+      }
+
+      boot().catch((err) => {
+        console.error('Tradebd boot error:', err);
+      });
+    </script>
+  </body>
+</html>
