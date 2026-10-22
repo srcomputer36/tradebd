@@ -5,4 +5,6 @@ deployment:
     - /bin/rm -f $DEPLOYPATH/welcome.php $DEPLOYPATH/index.php $DEPLOYPATH/default.html
     - /bin/cp -f cpanel-build/index.html $DEPLOYPATH/index.html
     - /bin/cp -f public/.htaccess $DEPLOYPATH/.htaccess
+    - /bin/cp -f public/robots.txt $DEPLOYPATH/robots.txt
+    - /bin/cp -f public/sitemap.xml $DEPLOYPATH/sitemap.xml
     - /bin/cp -Rf src $DEPLOYPATH/
