@@ -62,66 +62,167 @@ export default function App() {
   const openLegalPage = useCallback((section: LegalSection) => {
     setLegalSection(section);
     setActiveTab('LEGAL');
-    window.location.hash = section.toLowerCase();
+    const slug = section.toLowerCase();
+    try {
+      window.history.pushState(null, '', `/${slug}`);
+    } catch {
+      window.location.hash = slug;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleSelectTab = useCallback((tab: NavTab) => {
     setActiveTab(tab);
-    const hashMap: Record<NavTab, string> = {
-      CHART: 'chart',
-      SIMULATOR: 'simulator',
-      CALENDAR: 'calendar',
-      ACADEMY: 'academy',
-      PATTERNS: 'patterns',
-      CALCULATOR: 'calculator',
-      MENTOR: 'mentor',
-      LEGAL: 'about',
+    const pathMap: Record<NavTab, string> = {
+      CHART: '/',
+      SIMULATOR: '/simulator',
+      CALENDAR: '/calendar',
+      ACADEMY: '/academy',
+      PATTERNS: '/patterns',
+      CALCULATOR: '/calculator',
+      MENTOR: '/mentor',
+      LEGAL: '/about',
     };
-    if (window.location.hash && window.location.hash !== `#${hashMap[tab]}`) {
-      window.history.replaceState(null, '', `#${hashMap[tab]}`);
+    const targetPath = pathMap[tab] || '/';
+    try {
+      if (window.location.pathname !== targetPath || window.location.hash) {
+        window.history.pushState(null, '', targetPath);
+      }
+    } catch {
+      window.location.hash = targetPath.replace('/', '') || 'chart';
     }
   }, []);
 
-  // Sync URL hash with activeTab / legalSection so direct links (#privacy, #about, #contact, etc.) work for AdSense reviewers & crawlers
+  // Sync URL hash or pathname with activeTab / legalSection so direct links (/privacy, #privacy, etc.) work for AdSense & Googlebot
   useEffect(() => {
-    const applyHashRoute = () => {
-      const hash = window.location.hash.replace('#', '').toLowerCase();
-      if (hash === 'privacy' || hash === 'privacy-policy') {
+    const applyRoute = () => {
+      const hashRoute = window.location.hash.replace('#', '').trim().toLowerCase();
+      const pathRoute = window.location.pathname.replace(/^\/+|\/+$/g, '').trim().toLowerCase();
+      const route = hashRoute || pathRoute;
+
+      if (route === 'privacy' || route === 'privacy-policy') {
         setLegalSection('PRIVACY');
         setActiveTab('LEGAL');
-      } else if (hash === 'terms' || hash === 'terms-of-service') {
+      } else if (route === 'terms' || route === 'terms-of-service') {
         setLegalSection('TERMS');
         setActiveTab('LEGAL');
-      } else if (hash === 'disclaimer' || hash === 'risk-disclaimer') {
+      } else if (route === 'disclaimer' || route === 'risk-disclaimer') {
         setLegalSection('DISCLAIMER');
         setActiveTab('LEGAL');
-      } else if (hash === 'about' || hash === 'about-us') {
+      } else if (route === 'about' || route === 'about-us') {
         setLegalSection('ABOUT');
         setActiveTab('LEGAL');
-      } else if (hash === 'contact' || hash === 'contact-us') {
+      } else if (route === 'contact' || route === 'contact-us') {
         setLegalSection('CONTACT');
         setActiveTab('LEGAL');
-      } else if (hash === 'academy') {
+      } else if (route === 'academy') {
         setActiveTab('ACADEMY');
-      } else if (hash === 'calendar' || hash === 'news' || hash === 'sessions') {
+      } else if (route === 'calendar' || route === 'news' || route === 'sessions') {
         setActiveTab('CALENDAR');
-      } else if (hash === 'patterns') {
+      } else if (route === 'patterns') {
         setActiveTab('PATTERNS');
-      } else if (hash === 'calculator') {
+      } else if (route === 'calculator') {
         setActiveTab('CALCULATOR');
-      } else if (hash === 'simulator') {
+      } else if (route === 'simulator') {
         setActiveTab('SIMULATOR');
-      } else if (hash === 'mentor') {
+      } else if (route === 'mentor') {
         setActiveTab('MENTOR');
-      } else if (hash === 'chart') {
+      } else if (route === 'chart') {
         setActiveTab('CHART');
       }
     };
-    applyHashRoute();
-    window.addEventListener('hashchange', applyHashRoute);
-    return () => window.removeEventListener('hashchange', applyHashRoute);
+    applyRoute();
+    window.addEventListener('hashchange', applyRoute);
+    window.addEventListener('popstate', applyRoute);
+    return () => {
+      window.removeEventListener('hashchange', applyRoute);
+      window.removeEventListener('popstate', applyRoute);
+    };
   }, []);
+
+  // Dynamic per-page SEO Meta Tags & Canonical URL manager for Googlebot & Social Sharing
+  useEffect(() => {
+    const baseUrl = 'https://tradebd.online';
+    let slug = '';
+    let title = 'Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম';
+    let description =
+      'Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।';
+
+    if (activeTab === 'SIMULATOR') {
+      slug = '/simulator';
+      title = 'ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর (ফ্রি ডেমো একাউন্ট) – Tradebd';
+      description =
+        'কোনো আর্থিক ঝুঁকি ছাড়াই কাস্টম ডেমো ফান্ড দিয়ে লাইভ ফরেক্স ও ক্রিপ্টো মার্কেটে ভার্চুয়াল পেপার ট্রেডিং প্র্যাকটিস করুন Tradebd সিমুলেটরে।';
+    } else if (activeTab === 'CALENDAR') {
+      slug = '/calendar';
+      title = 'ফরেক্স অর্থনৈতিক ক্যালেন্ডার ও মার্কেট সেশন (বাংলাদেশ সময় BST) – Tradebd';
+      description =
+        'বাংলাদেশ সময় (UTC+6) অনুযায়ী সিডনি, টোকিও, লন্ডন ও নিউ ইয়র্ক ফরেক্স সেশন ট্র্যাকার এবং হাই-ইমপ্যাক্ট অর্থনৈতিক নিউজ ক্যালেন্ডার (CPI, NFP, FOMC)।';
+    } else if (activeTab === 'ACADEMY') {
+      slug = '/academy';
+      title = 'ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি কোর্স (বাংলা ও ইংরেজি) – Tradebd';
+      description =
+        'শুরু থেকে প্রফেশনাল লেভেল পর্যন্ত ফরেক্স ও ক্রিপ্টো ট্রেডিং, প্রাইস অ্যাকশন, সাপোর্ট-রেজিস্ট্যান্স ও রিস্ক ম্যানেজমেন্ট শিখুন সম্পূর্ণ বিনামূল্যে।';
+    } else if (activeTab === 'PATTERNS') {
+      slug = '/patterns';
+      title = 'ক্যান্ডেলস্টিক চার্ট প্যাটার্ন গাইড ও চিটশিট – Tradebd';
+      description =
+        'বুলিশ ও বেয়ারিশ ক্যান্ডেলস্টিক চার্ট প্যাটার্ন (হ্যামার, এনগালফিং, ডোজি, শুটিং স্টার, মর্নিং স্টার) চেনার নিয়ম এবং এন্ট্রি-এক্সিট স্ট্র্যাটেজি।';
+    } else if (activeTab === 'CALCULATOR') {
+      slug = '/calculator';
+      title = 'ফরেক্স ও ক্রিপ্টো রিস্ক এবং লট সাইজ ক্যালকুলেটর – Tradebd';
+      description =
+        'সঠিক রিস্ক-রিওয়ার্ড রেশিও (R:R), স্টপ লস ও একাউন্ট ব্যালেন্স অনুযায়ী নিখুঁত পজিশন ও লট সাইজ হিসাব করার প্রফেশনাল ট্রেডিং ক্যালকুলেটর।';
+    } else if (activeTab === 'MENTOR') {
+      slug = '/mentor';
+      title = 'ইন্টারঅ্যাক্টিভ চার্ট কুইজ ও ট্রেডিং মেন্টর – Tradebd';
+      description =
+        'লাইভ ক্যান্ডেলস্টিক চার্ট দেখে মার্কেট স্ট্রাকচার, আরএসআই (RSI), ইএমএ (EMA) ও ট্রেডিং সেটআপ বিশ্লেষণের প্র্যাকটিক্যাল কুইজ ও গাইড।';
+    } else if (activeTab === 'LEGAL') {
+      if (legalSection === 'ABOUT') {
+        slug = '/about';
+        title = 'আমাদের সম্পর্কে (About Us) – Tradebd ট্রেডিং একাডেমি';
+        description =
+          'Tradebd (tradebd.online) সম্পর্কে জানুন – বাংলাদেশের ও আন্তর্জাতিক শিক্ষার্থীদের জন্য বিনামূল্যে ফিন্যান্সিয়াল লিটারেসি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম।';
+      } else if (legalSection === 'CONTACT') {
+        slug = '/contact';
+        title = 'যোগাযোগ করুন (Contact Us) – Tradebd Support';
+        description =
+          'যেকোনো প্রশ্ন, মতামত বা কারিগরি সহায়তার জন্য Tradebd টিমের সাথে যোগাযোগ করুন (support@tradebd.online)।';
+      } else if (legalSection === 'PRIVACY') {
+        slug = '/privacy';
+        title = 'গোপনীয়তা নীতি (Privacy Policy) – Tradebd';
+        description =
+          'Tradebd (tradebd.online) এর গোপনীয়তা নীতি, কুকিজ ব্যবহার এবং Google AdSense ও ডাটা সুরক্ষা সংক্রান্ত বিস্তারিত নীতিমালা।';
+      } else if (legalSection === 'TERMS') {
+        slug = '/terms';
+        title = 'ব্যবহারের শর্তাবলী (Terms of Use) – Tradebd';
+        description =
+          'Tradebd ওয়েবসাইট, শিক্ষামূলক কোর্স এবং ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর ব্যবহারের নিয়মাবলী ও শর্তসমূহ।';
+      } else if (legalSection === 'DISCLAIMER') {
+        slug = '/disclaimer';
+        title = 'আর্থিক ঝুঁকি সতর্কবার্তা (Risk Disclaimer) – Tradebd';
+        description =
+          'Tradebd এর শিক্ষামূলক ও আর্থিক ঝুঁকি সতর্কবার্তা। ডেমো ট্রেডিং শুধুমাত্র শিক্ষার উদ্দেশ্যে এবং এটি কোনো বিনিয়োগ পরামর্শ নয়।';
+      }
+    }
+
+    const canonicalUrl = `${baseUrl}${slug || '/'}`;
+    document.title = title;
+
+    const setMetaTag = (selector: string, attr: string, content: string) => {
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute(attr, content);
+    };
+
+    setMetaTag('meta[name="description"]', 'content', description);
+    setMetaTag('meta[property="og:title"]', 'content', title);
+    setMetaTag('meta[property="og:description"]', 'content', description);
+    setMetaTag('meta[property="og:url"]', 'content', canonicalUrl);
+    setMetaTag('meta[name="twitter:title"]', 'content', title);
+    setMetaTag('meta[name="twitter:description"]', 'content', description);
+    setMetaTag('link[rel="canonical"]', 'href', canonicalUrl);
+  }, [activeTab, legalSection, language]);
 
   // Track live prices for all Crypto and Forex pairs simultaneously
   const [assetPrices, setAssetPrices] = useState<Record<string, number>>(() => {
@@ -871,7 +972,7 @@ export default function App() {
                   onChangeTimeframe={handleChangeTimeframe}
                   onSelectPriceForOrder={(_price, side) => {
                     setSimulatorDefaultSide(side);
-                    setActiveTab('SIMULATOR');
+                    handleSelectTab('SIMULATOR');
                   }}
                 />
               </div>
@@ -1004,8 +1105,8 @@ export default function App() {
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
                     <span className="text-slate-400">{t('wantToLearn')}</span>
                     <button
-                      onClick={() => setActiveTab('ACADEMY')}
-                      className="text-cyan-400 hover:text-cyan-300 font-semibold"
+                      onClick={() => handleSelectTab('ACADEMY')}
+                      className="text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
                     >
                       {t('viewAcademyCourse')}
                     </button>
@@ -1064,7 +1165,7 @@ export default function App() {
                   )}
 
                   <button
-                    onClick={() => setActiveTab('CALENDAR')}
+                    onClick={() => handleSelectTab('CALENDAR')}
                     className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-semibold text-cyan-400 transition-colors cursor-pointer"
                   >
                     {language === 'bn'
@@ -1158,12 +1259,10 @@ export default function App() {
           <LegalPagesView
             activeSection={legalSection}
             onSelectSection={(sec) => {
-              setLegalSection(sec);
-              window.location.hash = sec.toLowerCase();
+              openLegalPage(sec);
             }}
             onBackToChart={() => {
-              setActiveTab('CHART');
-              window.location.hash = 'chart';
+              handleSelectTab('CHART');
             }}
           />
         )}
@@ -1193,66 +1292,78 @@ export default function App() {
               </div>
             </div>
 
-            {/* Column 2: Platform Tools */}
+            {/* Column 2: Platform Tools (Semantic crawlable anchor links for Googlebot Sitelinks) */}
             <div className="md:col-span-4 space-y-2">
               <div className="text-white font-bold uppercase tracking-wider text-[11px]">
                 {language === 'bn' ? 'প্ল্যাটফর্ম ফিচারসমূহ' : 'Platform Features'}
               </div>
               <div className="grid grid-cols-2 gap-1.5 text-xs">
-                <button
-                  onClick={() => {
-                    setActiveTab('CHART');
+                <a
+                  href="/"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('CHART');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'লাইভ চার্ট অ্যানালাইসিস' : 'Live Chart Analysis'}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('SIMULATOR');
+                </a>
+                <a
+                  href="/simulator"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('SIMULATOR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'পেপার ট্রেডিং সিমুলেটর' : 'Paper Trading Simulator'}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('CALENDAR');
+                </a>
+                <a
+                  href="/calendar"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('CALENDAR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'অর্থনৈতিক ক্যালেন্ডার ও সেশন' : 'Economic Calendar & Sessions'}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('ACADEMY');
+                </a>
+                <a
+                  href="/academy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('ACADEMY');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'ট্রেডিং একাডেমি কোর্স' : 'Trading Academy Course'}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('PATTERNS');
+                </a>
+                <a
+                  href="/patterns"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('PATTERNS');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'ক্যান্ডেলস্টিক প্যাটার্ন' : 'Candlestick Patterns'}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('CALCULATOR');
+                </a>
+                <a
+                  href="/calculator"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('CALCULATOR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'রিস্ক ও লট ক্যালকুলেটর' : 'Risk & Lot Calculator'}
-                </button>
+                </a>
               </div>
             </div>
 
@@ -1263,7 +1374,7 @@ export default function App() {
               </div>
               <div className="flex flex-col gap-1.5 text-xs">
                 <a
-                  href="#about"
+                  href="/about"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('ABOUT');
@@ -1273,7 +1384,7 @@ export default function App() {
                   {language === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About Us'}
                 </a>
                 <a
-                  href="#privacy"
+                  href="/privacy"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('PRIVACY');
@@ -1283,7 +1394,7 @@ export default function App() {
                   {language === 'bn' ? 'গোপনীয়তা নীতি (Privacy Policy)' : 'Privacy Policy'}
                 </a>
                 <a
-                  href="#terms"
+                  href="/terms"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('TERMS');
@@ -1293,7 +1404,7 @@ export default function App() {
                   {language === 'bn' ? 'ব্যবহারের শর্তাবলী (Terms of Use)' : 'Terms & Conditions'}
                 </a>
                 <a
-                  href="#disclaimer"
+                  href="/disclaimer"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('DISCLAIMER');
@@ -1303,7 +1414,7 @@ export default function App() {
                   {language === 'bn' ? 'ঝুঁকি সতর্কবার্তা (Risk Disclaimer)' : 'Financial Risk Disclaimer'}
                 </a>
                 <a
-                  href="#contact"
+                  href="/contact"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('CONTACT');
@@ -1366,7 +1477,7 @@ export default function App() {
       {/* Mobile Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-2 px-1 shrink-0 z-40 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('CHART')}
+          onClick={() => handleSelectTab('CHART')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'CHART' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1376,7 +1487,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('SIMULATOR')}
+          onClick={() => handleSelectTab('SIMULATOR')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 relative shrink-0 ${
             activeTab === 'SIMULATOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1389,7 +1500,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('CALENDAR')}
+          onClick={() => handleSelectTab('CALENDAR')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'CALENDAR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1399,7 +1510,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('ACADEMY')}
+          onClick={() => handleSelectTab('ACADEMY')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'ACADEMY' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1409,7 +1520,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('PATTERNS')}
+          onClick={() => handleSelectTab('PATTERNS')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'PATTERNS' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1419,7 +1530,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('CALCULATOR')}
+          onClick={() => handleSelectTab('CALCULATOR')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'CALCULATOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}
@@ -1429,7 +1540,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('MENTOR')}
+          onClick={() => handleSelectTab('MENTOR')}
           className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
             activeTab === 'MENTOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
           }`}

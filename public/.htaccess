@@ -1,11 +1,15 @@
 AddType text/plain .ts .tsx
+AddType application/xml .xml
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Do not rewrite existing files, directories, src files, or API routes
+  # Do not rewrite existing files (such as sitemap.xml, robots.txt, google*.html), directories, src files, or API routes
   RewriteRule ^index\.html$ - [L]
+  RewriteRule ^sitemap\.xml$ - [L]
+  RewriteRule ^robots\.txt$ - [L]
+  RewriteRule ^google[a-z0-9]+\.html$ - [L]
   RewriteCond %{REQUEST_URI} !^/api/
   RewriteCond %{REQUEST_URI} !^/src/
   RewriteCond %{REQUEST_FILENAME} !-f
