@@ -5,10 +5,14 @@ AddType application/xml .xml
   RewriteEngine On
   RewriteBase /
 
-  # Do not rewrite existing files (such as sitemap.xml, robots.txt, google*.html), directories, src files, or API routes
+  # Block direct access to internal blog storage & admin password hash files
+  RewriteRule ^(\.tradebd-admin-hash\.php|blogs-data\.json)$ - [F,L]
+
+  # Do not rewrite existing files (such as sitemap.xml, robots.txt, api-blogs.php, google*.html), directories, src files, or API routes
   RewriteRule ^index\.html$ - [L]
   RewriteRule ^sitemap\.xml$ - [L]
   RewriteRule ^robots\.txt$ - [L]
+  RewriteRule ^api-blogs\.php$ - [L]
   RewriteRule ^google[a-z0-9]+\.html$ - [L]
   RewriteCond %{REQUEST_URI} !^/api/
   RewriteCond %{REQUEST_URI} !^/src/

@@ -125,9 +125,13 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
     }
 
     const unitRiskPct = entryPrice > 0 ? (unitRisk / entryPrice) * 100 : 0;
-    const units = valid && unitRisk > 0 ? risk / unitRisk : 0;
-    const lots = units / 100000;
-    const positionValue = units * entryPrice;
+    const isUsdBase = selectedPair.symbol.startsWith('USD/');
+    const isGold = selectedPair.id === 'xau-usd';
+    const perUnitRiskUsd = isUsdBase && entryPrice > 0 ? unitRisk / entryPrice : unitRisk;
+    const units = valid && perUnitRiskUsd > 0 ? risk / perUnitRiskUsd : 0;
+    const lotSizeContract = isGold ? 100 : 100000;
+    const lots = units / lotSizeContract;
+    const positionValue = isUsdBase ? units : units * entryPrice;
     const levNeeded = balance > 0 ? Math.max(1, positionValue / balance) : 1;
 
     let t15 = 0;
@@ -159,7 +163,7 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
       tp20: t20,
       tp30: t30,
     };
-  }, [balance, riskPercent, side, entryPrice, stopLoss]);
+  }, [balance, riskPercent, side, entryPrice, stopLoss, selectedPair.symbol, selectedPair.id]);
 
   return (
     <div className="flex flex-col h-full bg-[#0b0f19] border border-slate-800 rounded-lg overflow-hidden">
@@ -432,14 +436,25 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
                         {t('recQuantity')} ({selectedPair.symbol})
                       </span>
                       <div className="text-2xl font-black font-mono text-emerald-400">
-                        {positionUnits.toFixed(marketSection === 'CRYPTO' ? 4 : 0)}{' '}
+                        {positionUnits.toFixed(
+                          marketSection === 'CRYPTO'
+                            ? 4
+                            : selectedPair.id === 'xau-usd'
+                            ? 2
+                            : 0
+                        )}{' '}
                         <span className="text-xs text-slate-300 font-sans font-normal">
-                          {marketSection === 'CRYPTO' ? 'Coins / Tokens' : 'Forex Units'}
+                          {marketSection === 'CRYPTO'
+                            ? 'Coins / Tokens'
+                            : selectedPair.id === 'xau-usd'
+                            ? 'Oz (Troy Ounces)'
+                            : 'Forex Units'}
                         </span>
                       </div>
                       {marketSection === 'FOREX' && (
                         <div className="text-xs font-mono text-cyan-300 mt-1">
-                          ≈ {standardLots.toFixed(2)} Standard Lots (1 Lot = 100k)
+                          ≈ {standardLots.toFixed(2)} Standard Lots (
+                          {selectedPair.id === 'xau-usd' ? '1 Lot = 100 Oz' : '1 Lot = 100k'})
                         </div>
                       )}
                     </div>

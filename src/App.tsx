@@ -16,6 +16,7 @@ import {
   isSessionOpenAtUtc,
 } from './components/MarketIntel/MarketIntelView';
 import { LegalPagesView, LegalSection } from './components/Legal/LegalPagesView';
+import { BlogView } from './components/Blog/BlogView';
 import { useLanguage } from './context/LanguageContext';
 import {
   TrendingUp,
@@ -31,11 +32,13 @@ import {
   Calendar,
   Clock,
   Flame,
+  PenTool,
 } from 'lucide-react';
 
 export default function App() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<NavTab>('CHART');
+  const [blogSlug, setBlogSlug] = useState<string | null>(null);
   const [legalSection, setLegalSection] = useState<LegalSection>('ABOUT');
   const [selectedAsset, setSelectedAsset] = useState<Asset>(TRADING_ASSETS[0]);
   const [timeframe, setTimeframe] = useState<string>('15m');
@@ -73,11 +76,15 @@ export default function App() {
 
   const handleSelectTab = useCallback((tab: NavTab) => {
     setActiveTab(tab);
+    if (tab !== 'BLOG') {
+      setBlogSlug(null);
+    }
     const pathMap: Record<NavTab, string> = {
       CHART: '/',
       SIMULATOR: '/simulator',
       CALENDAR: '/calendar',
       ACADEMY: '/academy',
+      BLOG: '/blog',
       PATTERNS: '/patterns',
       CALCULATOR: '/calculator',
       MENTOR: '/mentor',
@@ -93,14 +100,22 @@ export default function App() {
     }
   }, []);
 
-  // Sync URL hash or pathname with activeTab / legalSection so direct links (/privacy, #privacy, etc.) work for AdSense & Googlebot
+  // Sync URL hash or pathname with activeTab / legalSection so direct links (/privacy, /blog/slug, etc.) work for AdSense & Googlebot
   useEffect(() => {
     const applyRoute = () => {
-      const hashRoute = window.location.hash.replace('#', '').trim().toLowerCase();
-      const pathRoute = window.location.pathname.replace(/^\/+|\/+$/g, '').trim().toLowerCase();
-      const route = hashRoute || pathRoute;
+      const hashRoute = window.location.hash.replace('#', '').trim();
+      const pathRoute = window.location.pathname.replace(/^\/+|\/+$/g, '').trim();
+      const rawRoute = hashRoute || pathRoute;
+      const route = rawRoute.toLowerCase();
 
-      if (route === 'privacy' || route === 'privacy-policy') {
+      if (route.startsWith('blog/') || route.startsWith('articles/')) {
+        const extractedSlug = rawRoute.split('/').slice(1).join('/').trim();
+        setBlogSlug(extractedSlug || null);
+        setActiveTab('BLOG');
+      } else if (route === 'blog' || route === 'articles') {
+        setBlogSlug(null);
+        setActiveTab('BLOG');
+      } else if (route === 'privacy' || route === 'privacy-policy') {
         setLegalSection('PRIVACY');
         setActiveTab('LEGAL');
       } else if (route === 'terms' || route === 'terms-of-service') {
@@ -143,84 +158,133 @@ export default function App() {
   // Dynamic per-page SEO Meta Tags & Canonical URL manager for Googlebot & Social Sharing
   useEffect(() => {
     const baseUrl = 'https://tradebd.online';
+    const isBn = language === 'bn';
     let slug = '';
-    let title = 'Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম';
-    let description =
-      'Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।';
+    let title = isBn
+      ? 'Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম'
+      : 'Tradebd – Trading Academy & Technical Analysis Platform';
+    let description = isBn
+      ? 'Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।'
+      : 'Tradebd – Professional Forex & Crypto Trading Academy, Live Technical Chart Analysis, Economic Calendar (BST UTC+6), and Risk-Free Virtual Paper Trading Simulator.';
 
     if (activeTab === 'SIMULATOR') {
       slug = '/simulator';
-      title = 'ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর (ফ্রি ডেমো একাউন্ট) – Tradebd';
-      description =
-        'কোনো আর্থিক ঝুঁকি ছাড়াই কাস্টম ডেমো ফান্ড দিয়ে লাইভ ফরেক্স ও ক্রিপ্টো মার্কেটে ভার্চুয়াল পেপার ট্রেডিং প্র্যাকটিস করুন Tradebd সিমুলেটরে।';
+      title = isBn
+        ? 'ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর (ফ্রি ডেমো একাউন্ট) – Tradebd'
+        : 'Virtual Paper Trading Simulator (Free Demo Account) – Tradebd';
+      description = isBn
+        ? 'কোনো আর্থিক ঝুঁকি ছাড়াই কাস্টম ডেমো ফান্ড দিয়ে লাইভ ফরেক্স ও ক্রিপ্টো মার্কেটে ভার্চুয়াল পেপার ট্রেডিং প্র্যাকটিস করুন Tradebd সিমুলেটরে।'
+        : 'Practice live Forex and Crypto paper trading with customizable virtual demo funds and zero financial risk on the Tradebd Simulator.';
     } else if (activeTab === 'CALENDAR') {
       slug = '/calendar';
-      title = 'ফরেক্স অর্থনৈতিক ক্যালেন্ডার ও মার্কেট সেশন (বাংলাদেশ সময় BST) – Tradebd';
-      description =
-        'বাংলাদেশ সময় (UTC+6) অনুযায়ী সিডনি, টোকিও, লন্ডন ও নিউ ইয়র্ক ফরেক্স সেশন ট্র্যাকার এবং হাই-ইমপ্যাক্ট অর্থনৈতিক নিউজ ক্যালেন্ডার (CPI, NFP, FOMC)।';
+      title = isBn
+        ? 'ফরেক্স অর্থনৈতিক ক্যালেন্ডার ও মার্কেট সেশন (বাংলাদেশ সময় BST) – Tradebd'
+        : 'Forex Economic Calendar & Global Market Sessions (BST UTC+6) – Tradebd';
+      description = isBn
+        ? 'বাংলাদেশ সময় (UTC+6) অনুযায়ী সিডনি, টোকিও, লন্ডন ও নিউ ইয়র্ক ফরেক্স সেশন ট্র্যাকার এবং হাই-ইমপ্যাক্ট অর্থনৈতিক নিউজ ক্যালেন্ডার (CPI, NFP, FOMC)।'
+        : 'Track Sydney, Tokyo, London, and New York Forex sessions in Bangladesh Standard Time (UTC+6) alongside high-impact economic news (CPI, NFP, FOMC).';
     } else if (activeTab === 'ACADEMY') {
       slug = '/academy';
-      title = 'ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি কোর্স (বাংলা ও ইংরেজি) – Tradebd';
-      description =
-        'শুরু থেকে প্রফেশনাল লেভেল পর্যন্ত ফরেক্স ও ক্রিপ্টো ট্রেডিং, প্রাইস অ্যাকশন, সাপোর্ট-রেজিস্ট্যান্স ও রিস্ক ম্যানেজমেন্ট শিখুন সম্পূর্ণ বিনামূল্যে।';
+      title = isBn
+        ? 'ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি কোর্স (বাংলা ও ইংরেজি) – Tradebd'
+        : 'Forex & Crypto Trading Academy Courses (Bengali & English) – Tradebd';
+      description = isBn
+        ? 'শুরু থেকে প্রফেশনাল লেভেল পর্যন্ত ফরেক্স ও ক্রিপ্টো ট্রেডিং, প্রাইস অ্যাকশন, সাপোর্ট-রেজিস্ট্যান্স ও রিস্ক ম্যানেজমেন্ট শিখুন সম্পূর্ণ বিনামূল্যে।'
+        : 'Learn Forex & Crypto trading from beginner to institutional level: price action, support & resistance, indicators, and risk management for free.';
+    } else if (activeTab === 'BLOG') {
+      slug = blogSlug ? `/blog/${blogSlug}` : '/blog';
+      title = isBn
+        ? 'শিক্ষণীয় ফরেক্স ও ক্রিপ্টো ট্রেডিং ব্লগ এবং আর্টিকেল হাব – Tradebd'
+        : 'Educational Forex & Crypto Trading Blog & Articles – Tradebd';
+      description = isBn
+        ? 'ফরেক্স ট্রেডিং গাইড, ক্যান্ডেলস্টিক চার্ট প্যাটার্ন, বাংলাদেশ সময় অনুযায়ী ট্রেডিং সেশন এবং মানি ম্যানেজমেন্টের বিস্তারিত বাংলা ও ইংরেজি ব্লগ।'
+        : 'In-depth educational articles on Forex trading, candlestick chart patterns, global trading sessions, and institutional risk management.';
     } else if (activeTab === 'PATTERNS') {
       slug = '/patterns';
-      title = 'ক্যান্ডেলস্টিক চার্ট প্যাটার্ন গাইড ও চিটশিট – Tradebd';
-      description =
-        'বুলিশ ও বেয়ারিশ ক্যান্ডেলস্টিক চার্ট প্যাটার্ন (হ্যামার, এনগালফিং, ডোজি, শুটিং স্টার, মর্নিং স্টার) চেনার নিয়ম এবং এন্ট্রি-এক্সিট স্ট্র্যাটেজি।';
+      title = isBn
+        ? 'ক্যান্ডেলস্টিক চার্ট প্যাটার্ন গাইড ও চিটশিট – Tradebd'
+        : 'Candlestick Chart Patterns Guide & Cheatsheet – Tradebd';
+      description = isBn
+        ? 'বুলিশ ও বেয়ারিশ ক্যান্ডেলস্টিক চার্ট প্যাটার্ন (হ্যামার, এনগালফিং, ডোজি, শুটিং স্টার, মর্নিং স্টার) চেনার নিয়ম এবং এন্ট্রি-এক্সিট স্ট্র্যাটেজি।'
+        : 'Master bullish and bearish candlestick chart patterns (Hammer, Engulfing, Doji, Shooting Star, Morning Star) with clear entry and exit rules.';
     } else if (activeTab === 'CALCULATOR') {
       slug = '/calculator';
-      title = 'ফরেক্স ও ক্রিপ্টো রিস্ক এবং লট সাইজ ক্যালকুলেটর – Tradebd';
-      description =
-        'সঠিক রিস্ক-রিওয়ার্ড রেশিও (R:R), স্টপ লস ও একাউন্ট ব্যালেন্স অনুযায়ী নিখুঁত পজিশন ও লট সাইজ হিসাব করার প্রফেশনাল ট্রেডিং ক্যালকুলেটর।';
+      title = isBn
+        ? 'ফরেক্স ও ক্রিপ্টো রিস্ক এবং লট সাইজ ক্যালকুলেটর – Tradebd'
+        : 'Forex & Crypto Risk & Position Lot Size Calculator – Tradebd';
+      description = isBn
+        ? 'সঠিক রিস্ক-রিওয়ার্ড রেশিও (R:R), স্টপ লস ও একাউন্ট ব্যালেন্স অনুযায়ী নিখুঁত পজিশন ও লট সাইজ হিসাব করার প্রফেশনাল ট্রেডিং ক্যালকুলেটর।'
+        : 'Calculate exact position size, standard/mini/micro lots, and Risk-to-Reward (R:R) ratio based on your account balance and stop-loss distance.';
     } else if (activeTab === 'MENTOR') {
       slug = '/mentor';
-      title = 'ইন্টারঅ্যাক্টিভ চার্ট কুইজ ও ট্রেডিং মেন্টর – Tradebd';
-      description =
-        'লাইভ ক্যান্ডেলস্টিক চার্ট দেখে মার্কেট স্ট্রাকচার, আরএসআই (RSI), ইএমএ (EMA) ও ট্রেডিং সেটআপ বিশ্লেষণের প্র্যাকটিক্যাল কুইজ ও গাইড।';
+      title = isBn
+        ? 'ইন্টারঅ্যাক্টিভ চার্ট কুইজ ও ট্রেডিং মেন্টর – Tradebd'
+        : 'Interactive Chart Quiz & Trade Setup Mentor – Tradebd';
+      description = isBn
+        ? 'লাইভ ক্যান্ডেলস্টিক চার্ট দেখে মার্কেট স্ট্রাকচার, আরএসআই (RSI), ইএমএ (EMA) ও ট্রেডিং সেটআপ বিশ্লেষণের প্র্যাকটিক্যাল কুইজ ও গাইড।'
+        : 'Test your chart reading skills and evaluate trade setups with live RSI, EMA, and market structure analysis.';
     } else if (activeTab === 'LEGAL') {
       if (legalSection === 'ABOUT') {
         slug = '/about';
-        title = 'আমাদের সম্পর্কে (About Us) – Tradebd ট্রেডিং একাডেমি';
-        description =
-          'Tradebd (tradebd.online) সম্পর্কে জানুন – বাংলাদেশের ও আন্তর্জাতিক শিক্ষার্থীদের জন্য বিনামূল্যে ফিন্যান্সিয়াল লিটারেসি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম।';
+        title = isBn
+          ? 'আমাদের সম্পর্কে (About Us) – Tradebd ট্রেডিং একাডেমি'
+          : 'About Us – Tradebd Financial Education Academy';
+        description = isBn
+          ? 'Tradebd (tradebd.online) সম্পর্কে জানুন – বাংলাদেশের ও আন্তর্জাতিক শিক্ষার্থীদের জন্য বিনামূল্যে ফিন্যান্সিয়াল লিটারেসি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম।'
+          : 'Learn about Tradebd (tradebd.online) – a free financial literacy, technical analysis, and virtual paper trading platform.';
       } else if (legalSection === 'CONTACT') {
         slug = '/contact';
-        title = 'যোগাযোগ করুন (Contact Us) – Tradebd Support';
-        description =
-          'যেকোনো প্রশ্ন, মতামত বা কারিগরি সহায়তার জন্য Tradebd টিমের সাথে যোগাযোগ করুন (support@tradebd.online)।';
+        title = isBn
+          ? 'যোগাযোগ করুন (Contact Us) – Tradebd Support'
+          : 'Contact Us – Tradebd Support';
+        description = isBn
+          ? 'যেকোনো প্রশ্ন, মতামত বা কারিগরি সহায়তার জন্য Tradebd টিমের সাথে যোগাযোগ করুন (support@tradebd.online)।'
+          : 'Get in touch with the Tradebd editorial and technical support team (support@tradebd.online).';
       } else if (legalSection === 'PRIVACY') {
         slug = '/privacy';
-        title = 'গোপনীয়তা নীতি (Privacy Policy) – Tradebd';
-        description =
-          'Tradebd (tradebd.online) এর গোপনীয়তা নীতি, কুকিজ ব্যবহার এবং Google AdSense ও ডাটা সুরক্ষা সংক্রান্ত বিস্তারিত নীতিমালা।';
+        title = isBn
+          ? 'গোপনীয়তা নীতি (Privacy Policy) – Tradebd'
+          : 'Privacy Policy – Tradebd';
+        description = isBn
+          ? 'Tradebd (tradebd.online) এর গোপনীয়তা নীতি, কুকিজ ব্যবহার এবং Google AdSense ও ডাটা সুরক্ষা সংক্রান্ত বিস্তারিত নীতিমালা।'
+          : 'Read the Tradebd (tradebd.online) Privacy Policy, cookie usage disclosures, Google AdSense compliance, and data protection standards.';
       } else if (legalSection === 'TERMS') {
         slug = '/terms';
-        title = 'ব্যবহারের শর্তাবলী (Terms of Use) – Tradebd';
-        description =
-          'Tradebd ওয়েবসাইট, শিক্ষামূলক কোর্স এবং ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর ব্যবহারের নিয়মাবলী ও শর্তসমূহ।';
+        title = isBn
+          ? 'ব্যবহারের শর্তাবলী (Terms of Use) – Tradebd'
+          : 'Terms of Use – Tradebd';
+        description = isBn
+          ? 'Tradebd ওয়েবসাইট, শিক্ষামূলক কোর্স এবং ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর ব্যবহারের নিয়মাবলী ও শর্তসমূহ।'
+          : 'Terms and conditions for using the Tradebd website, educational courses, and virtual paper trading simulator.';
       } else if (legalSection === 'DISCLAIMER') {
         slug = '/disclaimer';
-        title = 'আর্থিক ঝুঁকি সতর্কবার্তা (Risk Disclaimer) – Tradebd';
-        description =
-          'Tradebd এর শিক্ষামূলক ও আর্থিক ঝুঁকি সতর্কবার্তা। ডেমো ট্রেডিং শুধুমাত্র শিক্ষার উদ্দেশ্যে এবং এটি কোনো বিনিয়োগ পরামর্শ নয়।';
+        title = isBn
+          ? 'আর্থিক ঝুঁকি সতর্কবার্তা (Risk Disclaimer) – Tradebd'
+          : 'Financial Risk Disclaimer – Tradebd';
+        description = isBn
+          ? 'Tradebd এর শিক্ষামূলক ও আর্থিক ঝুঁকি সতর্কবার্তা। ডেমো ট্রেডিং শুধুমাত্র শিক্ষার উদ্দেশ্যে এবং এটি কোনো বিনিয়োগ পরামর্শ নয়।'
+          : 'Educational and financial risk disclaimer for Tradebd. Virtual paper trading is strictly for education and does not constitute investment advice.';
       }
     }
 
     const canonicalUrl = `${baseUrl}${slug || '/'}`;
-    document.title = title;
 
     const setMetaTag = (selector: string, attr: string, content: string) => {
       const el = document.querySelector(selector);
       if (el) el.setAttribute(attr, content);
     };
 
-    setMetaTag('meta[name="description"]', 'content', description);
-    setMetaTag('meta[property="og:title"]', 'content', title);
-    setMetaTag('meta[property="og:description"]', 'content', description);
+    // When viewing a specific blog article, BlogView manages its own article-specific title & meta description
+    if (!(activeTab === 'BLOG' && blogSlug)) {
+      document.title = title;
+      setMetaTag('meta[name="description"]', 'content', description);
+      setMetaTag('meta[property="og:title"]', 'content', title);
+      setMetaTag('meta[property="og:description"]', 'content', description);
+      setMetaTag('meta[name="twitter:title"]', 'content', title);
+      setMetaTag('meta[name="twitter:description"]', 'content', description);
+    }
+
     setMetaTag('meta[property="og:url"]', 'content', canonicalUrl);
-    setMetaTag('meta[name="twitter:title"]', 'content', title);
-    setMetaTag('meta[name="twitter:description"]', 'content', description);
     setMetaTag('link[rel="canonical"]', 'href', canonicalUrl);
 
     // Send virtual pageview to Google Analytics (GA4) on tab/route change
@@ -230,13 +294,13 @@ export default function App() {
         w.gtag('config', 'G-JPKV5KJD8X', {
           page_path: slug || '/',
           page_location: canonicalUrl,
-          page_title: title,
+          page_title: document.title || title,
         });
       }
     } catch {
       // ignore analytics error
     }
-  }, [activeTab, legalSection, language]);
+  }, [activeTab, legalSection, blogSlug, language]);
 
   // Track live prices for all Crypto and Forex pairs simultaneously
   const [assetPrices, setAssetPrices] = useState<Record<string, number>>(() => {
@@ -330,11 +394,6 @@ export default function App() {
     }, 4000);
   }, []);
 
-  // Sync document title with current language
-  useEffect(() => {
-    document.title = `${t('appName')} - ${t('appTagline')}`;
-  }, [t]);
-
   // When selected asset changes, generate 500 candles anchored to that asset's current live price
   const handleSelectAsset = (asset: Asset) => {
     setSelectedAsset(asset);
@@ -364,12 +423,12 @@ export default function App() {
     if (baseSeries.length > 0) {
       const prevLast = baseSeries[baseSeries.length - 1];
       const high = Number(
-        (Math.max(prevLast.open, spikedPrice) * (1 + Math.abs(signedPct) * 0.25)).toFixed(
+        (Math.max(prevLast.close, spikedPrice) * (1 + Math.abs(signedPct) * 0.25)).toFixed(
           asset.precision
         )
       );
       const low = Number(
-        (Math.min(prevLast.open, spikedPrice) * (1 - Math.abs(signedPct) * 0.25)).toFixed(
+        (Math.min(prevLast.close, spikedPrice) * (1 - Math.abs(signedPct) * 0.25)).toFixed(
           asset.precision
         )
       );
@@ -791,6 +850,7 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
+        onOpenLegalSection={openLegalPage}
         balance={balance}
         openPositionsCount={positions.length}
         onResetDemo={handleResetDemo}
@@ -1230,6 +1290,24 @@ export default function App() {
         {/* TAB 3: TRADING ACADEMY & LESSONS */}
         {activeTab === 'ACADEMY' && <AcademyView />}
 
+        {/* TAB 3.5: EDUCATIONAL BLOG & ARTICLE PUBLISHING STUDIO */}
+        {activeTab === 'BLOG' && (
+          <BlogView
+            initialSlug={blogSlug}
+            onSelectSlug={(nextSlug) => {
+              setBlogSlug(nextSlug);
+              const target = nextSlug ? `/blog/${nextSlug}` : '/blog';
+              try {
+                window.history.pushState(null, '', target);
+              } catch {
+                window.location.hash = nextSlug ? `blog/${nextSlug}` : 'blog';
+              }
+            }}
+            onNavigateTab={(tab) => handleSelectTab(tab)}
+            onShowToast={showToast}
+          />
+        )}
+
         {/* TAB 4: PATTERNS CHEATSHEET & GALLERY */}
         {activeTab === 'PATTERNS' && (
           <PatternGallery
@@ -1377,6 +1455,17 @@ export default function App() {
                   className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'রিস্ক ও লট ক্যালকুলেটর' : 'Risk & Lot Calculator'}
+                </a>
+                <a
+                  href="/blog"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab('BLOG');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-left text-emerald-400 hover:text-emerald-300 font-semibold transition-colors cursor-pointer"
+                >
+                  {language === 'bn' ? '✍️ শিক্ষণীয় ব্লগ ও আর্টিকেল' : '✍️ Trading Blog & Articles'}
                 </a>
               </div>
             </div>
@@ -1531,6 +1620,16 @@ export default function App() {
         >
           <BookOpen className="w-4 h-4" />
           <span>{t('navAcademyShort')}</span>
+        </button>
+
+        <button
+          onClick={() => handleSelectTab('BLOG')}
+          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
+            activeTab === 'BLOG' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          }`}
+        >
+          <PenTool className="w-4 h-4" />
+          <span>{language === 'bn' ? 'ব্লগ' : 'Blog'}</span>
         </button>
 
         <button

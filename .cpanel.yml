@@ -8,4 +8,5 @@ deployment:
     - /bin/cp -f public/robots.txt $DEPLOYPATH/robots.txt
     - /bin/cp -f public/sitemap.xml $DEPLOYPATH/sitemap.xml
     - /bin/cp -f public/google782575ecc6870ba1.html $DEPLOYPATH/google782575ecc6870ba1.html
+    - /bin/cp -f public/api-blogs.php $DEPLOYPATH/api-blogs.php
     - /bin/cp -Rf src $DEPLOYPATH/

@@ -1,6 +1,7 @@
 import express from 'express';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,9 +13,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Security hardening: Disable x-powered-by header and limit JSON body size
+// Security hardening: Disable x-powered-by header and allow up to 5mb JSON body for blog cover images
 app.disable('x-powered-by');
-app.use(express.json({ limit: '16kb' }));
+app.use(express.json({ limit: '5mb' }));
 
 // Security headers middleware (preserving iframe compatibility for preview environment)
 app.use((req, res, next) => {
@@ -470,6 +471,144 @@ Keep the answer under 120 words, structured with 2-3 bullet points if helpful.`;
     return res.json({ answer: fallbackAnswers.default });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Server-side Blog Articles storage & Admin Authentication for user-published SEO articles
+const blogsDataFile = path.resolve(__dirname, 'public', 'blogs-data.json');
+function loadStoredBlogs(): any[] {
+  try {
+    if (fs.existsSync(blogsDataFile)) {
+      const raw = fs.readFileSync(blogsDataFile, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    // ignore read error
+  }
+  return [];
+}
+function saveStoredBlogs(articles: any[]) {
+  try {
+    fs.writeFileSync(blogsDataFile, JSON.stringify(articles, null, 2), 'utf-8');
+  } catch {
+    // ignore write error in read-only environments
+  }
+}
+
+const serverCustomBlogs: any[] = loadStoredBlogs();
+let serverAdminPassword = process.env.BLOG_ADMIN_PASSWORD || 'Tradebd@2026';
+
+app.get(['/api/blogs', '/api-blogs.php'], (_req, res) => {
+  res.json({
+    status: 'success',
+    articles: serverCustomBlogs,
+  });
+});
+
+app.post(['/api/blogs', '/api-blogs.php'], apiRateLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const action = body.action;
+    const adminKey = typeof body.adminKey === 'string' ? body.adminKey : '';
+
+    if (action === 'translate') {
+      const text = typeof body.text === 'string' ? body.text : '';
+      const sourceLang = typeof body.sourceLang === 'string' ? body.sourceLang : 'auto';
+      const targetLang = typeof body.targetLang === 'string' ? body.targetLang : 'en';
+      if (!text.trim()) {
+        return res.json({ status: 'success', translatedText: text });
+      }
+      try {
+        const gtxUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(
+          sourceLang
+        )}&tl=${encodeURIComponent(targetLang)}&dt=t`;
+        const gtxRes = await fetch(gtxUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'User-Agent': 'Mozilla/5.0',
+          },
+          body: `q=${encodeURIComponent(text)}`,
+        });
+        if (gtxRes.ok) {
+          const gtxJson = (await gtxRes.json()) as any;
+          if (Array.isArray(gtxJson) && Array.isArray(gtxJson[0])) {
+            const out = gtxJson[0]
+              .map((seg: any) => (Array.isArray(seg) && typeof seg[0] === 'string' ? seg[0] : ''))
+              .join('');
+            if (out.trim()) {
+              return res.json({ status: 'success', translatedText: out });
+            }
+          }
+        }
+      } catch {
+        // fallback below
+      }
+      return res.json({ status: 'success', translatedText: text });
+    }
+
+    if (action === 'verify') {
+      if (adminKey && adminKey === serverAdminPassword) {
+        return res.json({ status: 'success', authenticated: true });
+      }
+      return res.status(401).json({
+        status: 'error',
+        authenticated: false,
+        message: 'Invalid Admin Password',
+      });
+    }
+
+    if (!adminKey || adminKey !== serverAdminPassword) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized: Valid Admin Password is required.',
+      });
+    }
+
+    if (action === 'change_password') {
+      const nextPass = sanitizeString(body.newPassword, 100, '');
+      if (nextPass.length < 6) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Password must be at least 6 characters.',
+        });
+      }
+      serverAdminPassword = nextPass;
+      return res.json({ status: 'success', message: 'Password updated successfully' });
+    }
+
+    if (action === 'save' && body.article && typeof body.article === 'object') {
+      const art = body.article;
+      const id = sanitizeString(art.id, 80, `custom-${Date.now()}`);
+      const existingIdx = serverCustomBlogs.findIndex((b) => b.id === id);
+      if (existingIdx !== -1) {
+        serverCustomBlogs.splice(existingIdx, 1);
+      }
+      serverCustomBlogs.unshift({ ...art, id });
+      saveStoredBlogs(serverCustomBlogs);
+      return res.json({
+        status: 'success',
+        articles: serverCustomBlogs,
+      });
+    }
+
+    if (action === 'delete' && body.id) {
+      const delId = String(body.id);
+      const idx = serverCustomBlogs.findIndex((b) => b.id === delId);
+      if (idx !== -1) {
+        serverCustomBlogs.splice(idx, 1);
+      }
+      saveStoredBlogs(serverCustomBlogs);
+      return res.json({
+        status: 'success',
+        articles: serverCustomBlogs,
+      });
+    }
+
+    return res.status(400).json({ status: 'error', message: 'Invalid blog action' });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to process blog request' });
   }
 });
 

@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Mail,
   ChevronRight,
+  PenTool,
 } from 'lucide-react';
 
 export type NavTab =
@@ -26,6 +27,7 @@ export type NavTab =
   | 'SIMULATOR'
   | 'CALENDAR'
   | 'ACADEMY'
+  | 'BLOG'
   | 'PATTERNS'
   | 'CALCULATOR'
   | 'MENTOR'
@@ -34,6 +36,7 @@ export type NavTab =
 interface NavbarProps {
   activeTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  onOpenLegalSection?: (section: 'ABOUT' | 'PRIVACY' | 'TERMS' | 'DISCLAIMER' | 'CONTACT') => void;
   balance: number;
   openPositionsCount: number;
   onResetDemo: () => void;
@@ -42,6 +45,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onSelectTab,
+  onOpenLegalSection,
   balance,
   openPositionsCount,
   onResetDemo,
@@ -113,6 +117,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       icon: BookOpen,
     },
     {
+      id: 'BLOG',
+      label: isBn ? 'শিক্ষণীয় ব্লগ ও আর্টিকেল' : 'Educational Blog & Articles',
+      subtitle: isBn
+        ? 'ফরেক্স, ক্রিপ্টো ও চার্ট অ্যানালাইসিস নিয়ে বিস্তারিত ব্লগ'
+        : 'In-depth Forex, Crypto & Chart Analysis guides',
+      icon: PenTool,
+      badge: 'SEO',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    },
+    {
       id: 'PATTERNS',
       label: t('navPatterns'),
       subtitle: isBn ? 'বুলিশ ও বিয়ারিশ ক্যান্ডেলস্টিক প্যাটার্ন গাইড' : 'Bullish & Bearish candlestick cheatsheet',
@@ -139,10 +153,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       ? 'আইনি ও নীতিমালা'
       : 'Legal & Info';
 
-  const handleSelectFromDrawer = (tab: NavTab, hash?: string) => {
-    onSelectTab(tab);
-    if (hash) {
-      window.location.hash = hash;
+  const handleSelectFromDrawer = (
+    tab: NavTab,
+    legalSection?: 'ABOUT' | 'PRIVACY' | 'TERMS' | 'DISCLAIMER' | 'CONTACT'
+  ) => {
+    if (tab === 'LEGAL' && legalSection && onOpenLegalSection) {
+      onOpenLegalSection(legalSection);
+    } else {
+      onSelectTab(tab);
+      if (legalSection) {
+        window.location.hash = legalSection.toLowerCase();
+      }
     }
     setDrawerOpen(false);
   };
@@ -246,6 +267,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[10px] font-sans font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
               {isBn ? 'ফান্ড সেট' : 'Edit'}
             </span>
+          </button>
+
+          {/* Quick Blog & Article Writer Button */}
+          <button
+            onClick={() => onSelectTab('BLOG')}
+            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+              activeTab === 'BLOG'
+                ? 'bg-cyan-500 text-slate-950 border-cyan-400'
+                : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 border-cyan-500/40'
+            }`}
+          >
+            <PenTool className="w-3.5 h-3.5" />
+            <span>{isBn ? 'ব্লগ ও আর্টিকেল' : 'Blog'}</span>
           </button>
 
           {/* Primary Action Button */}
@@ -365,43 +399,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isBn ? 'আইনি ও তথ্য পাতা (Legal & Info)' : 'Legal & Information'}
             </div>
 
-            {[
-              {
-                hash: 'about',
-                labelBn: 'আমাদের সম্পর্কে (About Us)',
-                labelEn: 'About Us',
-                icon: Info,
-              },
-              {
-                hash: 'privacy',
-                labelBn: 'গোপনীয়তা নীতি (Privacy Policy)',
-                labelEn: 'Privacy Policy',
-                icon: Lock,
-              },
-              {
-                hash: 'terms',
-                labelBn: 'ব্যবহারের শর্তাবলী (Terms of Use)',
-                labelEn: 'Terms & Conditions',
-                icon: FileText,
-              },
-              {
-                hash: 'disclaimer',
-                labelBn: 'ঝুঁকি সতর্কবার্তা (Risk Disclaimer)',
-                labelEn: 'Risk Disclaimer',
-                icon: AlertTriangle,
-              },
-              {
-                hash: 'contact',
-                labelBn: 'যোগাযোগ করুন (Contact Us)',
-                labelEn: 'Contact Us',
-                icon: Mail,
-              },
-            ].map((legal) => {
+            {(
+              [
+                {
+                  section: 'ABOUT',
+                  labelBn: 'আমাদের সম্পর্কে (About Us)',
+                  labelEn: 'About Us',
+                  icon: Info,
+                },
+                {
+                  section: 'PRIVACY',
+                  labelBn: 'গোপনীয়তা নীতি (Privacy Policy)',
+                  labelEn: 'Privacy Policy',
+                  icon: Lock,
+                },
+                {
+                  section: 'TERMS',
+                  labelBn: 'ব্যবহারের শর্তাবলী (Terms of Use)',
+                  labelEn: 'Terms & Conditions',
+                  icon: FileText,
+                },
+                {
+                  section: 'DISCLAIMER',
+                  labelBn: 'ঝুঁকি সতর্কবার্তা (Risk Disclaimer)',
+                  labelEn: 'Risk Disclaimer',
+                  icon: AlertTriangle,
+                },
+                {
+                  section: 'CONTACT',
+                  labelBn: 'যোগাযোগ করুন (Contact Us)',
+                  labelEn: 'Contact Us',
+                  icon: Mail,
+                },
+              ] as const
+            ).map((legal) => {
               const Icon = legal.icon;
               return (
                 <button
-                  key={legal.hash}
-                  onClick={() => handleSelectFromDrawer('LEGAL', legal.hash)}
+                  key={legal.section}
+                  onClick={() => handleSelectFromDrawer('LEGAL', legal.section)}
                   className="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
                 >
                   <Icon className="w-3.5 h-3.5 text-slate-500" />
