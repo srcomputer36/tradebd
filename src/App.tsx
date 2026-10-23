@@ -222,6 +222,20 @@ export default function App() {
     setMetaTag('meta[name="twitter:title"]', 'content', title);
     setMetaTag('meta[name="twitter:description"]', 'content', description);
     setMetaTag('link[rel="canonical"]', 'href', canonicalUrl);
+
+    // Send virtual pageview to Google Analytics (GA4) on tab/route change
+    try {
+      const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+      if (typeof w.gtag === 'function') {
+        w.gtag('config', 'G-JPKV5KJD8X', {
+          page_path: slug || '/',
+          page_location: canonicalUrl,
+          page_title: title,
+        });
+      }
+    } catch {
+      // ignore analytics error
+    }
   }, [activeTab, legalSection, language]);
 
   // Track live prices for all Crypto and Forex pairs simultaneously
