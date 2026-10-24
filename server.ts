@@ -276,7 +276,7 @@ app.post('/api/analyze-trade', apiRateLimiter, async (req, res) => {
     const takeProfit = Number(body.takeProfit) || 0;
     const timeframe = sanitizeString(body.timeframe, 10, '1h');
     const notes = sanitizeString(body.notes, 500, '');
-    const language = sanitizeString(body.language, 5, 'bn');
+    const language = sanitizeString(body.language, 10, 'en');
     const indicators: string[] = Array.isArray(body.indicators)
       ? body.indicators
           .slice(0, 10)
@@ -299,12 +299,21 @@ app.post('/api/analyze-trade', apiRateLimiter, async (req, res) => {
     const languageMap: Record<string, string> = {
       en: 'English',
       bn: 'Bengali (বাংলা)',
-      es: 'Spanish (Español)',
       hi: 'Hindi (हिन्दी)',
+      ur: 'Urdu (اردو)',
       ar: 'Arabic (العربية)',
+      es: 'Spanish (Español)',
       fr: 'French (Français)',
       de: 'German (Deutsch)',
+      pt: 'Portuguese (Português)',
+      id: 'Indonesian (Bahasa Indonesia)',
+      ms: 'Malay (Bahasa Melayu)',
+      ru: 'Russian (Русский)',
+      tr: 'Turkish (Türkçe)',
+      'zh-CN': 'Simplified Chinese (简体中文)',
       ja: 'Japanese (日本語)',
+      ko: 'Korean (한국어)',
+      vi: 'Vietnamese (Tiếng Việt)',
     };
     const targetLangName = languageMap[language] || 'English';
 
@@ -409,7 +418,7 @@ app.post('/api/ask-mentor', apiRateLimiter, async (req, res) => {
   try {
     const body = req.body || {};
     const question = sanitizeString(body.question, 500, '');
-    const language = sanitizeString(body.language, 5, 'bn');
+    const language = sanitizeString(body.language, 10, 'en');
 
     if (!question) {
       return res.status(400).json({ error: 'Question is required' });
@@ -420,12 +429,21 @@ app.post('/api/ask-mentor', apiRateLimiter, async (req, res) => {
     const languageMap: Record<string, string> = {
       en: 'English',
       bn: 'Bengali (বাংলা)',
-      es: 'Spanish (Español)',
       hi: 'Hindi (हिन्दी)',
+      ur: 'Urdu (اردو)',
       ar: 'Arabic (العربية)',
+      es: 'Spanish (Español)',
       fr: 'French (Français)',
       de: 'German (Deutsch)',
+      pt: 'Portuguese (Português)',
+      id: 'Indonesian (Bahasa Indonesia)',
+      ms: 'Malay (Bahasa Melayu)',
+      ru: 'Russian (Русский)',
+      tr: 'Turkish (Türkçe)',
+      'zh-CN': 'Simplified Chinese (简体中文)',
       ja: 'Japanese (日本語)',
+      ko: 'Korean (한국어)',
+      vi: 'Vietnamese (Tiếng Việt)',
     };
     const targetLangName = languageMap[language] || 'English';
 

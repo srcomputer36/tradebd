@@ -37,6 +37,8 @@ export interface TradingSessionInfo {
   closeUtcHour: number; // 0-23
   openBstLabel: string;
   closeBstLabel: string;
+  openBstLabelEn: string;
+  closeBstLabelEn: string;
   volatility: 'HIGH' | 'VERY_HIGH' | 'MEDIUM';
   bestPairs: string[];
   characteristicsEn: string;
@@ -58,6 +60,8 @@ export const GLOBAL_SESSIONS: TradingSessionInfo[] = [
     closeUtcHour: 7,
     openBstLabel: 'ভোর ৪:০০ AM',
     closeBstLabel: 'দুপুর ১:০০ PM',
+    openBstLabelEn: '04:00 AM',
+    closeBstLabelEn: '01:00 PM',
     volatility: 'MEDIUM',
     bestPairs: ['AUD/USD', 'USD/JPY', 'EUR/USD'],
     characteristicsEn:
@@ -81,6 +85,8 @@ export const GLOBAL_SESSIONS: TradingSessionInfo[] = [
     closeUtcHour: 9,
     openBstLabel: 'সকাল ৬:০০ AM',
     closeBstLabel: 'দুপুর ৩:০০ PM',
+    openBstLabelEn: '06:00 AM',
+    closeBstLabelEn: '03:00 PM',
     volatility: 'MEDIUM',
     bestPairs: ['USD/JPY', 'AUD/USD', 'BTC/USDT', 'ETH/USDT'],
     characteristicsEn:
@@ -104,6 +110,8 @@ export const GLOBAL_SESSIONS: TradingSessionInfo[] = [
     closeUtcHour: 17,
     openBstLabel: 'দুপুর ২:০০ PM',
     closeBstLabel: 'রাত ১১:০০ PM',
+    openBstLabelEn: '02:00 PM',
+    closeBstLabelEn: '11:00 PM',
     volatility: 'VERY_HIGH',
     bestPairs: ['EUR/USD', 'GBP/USD', 'USD/CHF', 'BTC/USDT'],
     characteristicsEn:
@@ -127,6 +135,8 @@ export const GLOBAL_SESSIONS: TradingSessionInfo[] = [
     closeUtcHour: 22,
     openBstLabel: 'সন্ধ্যা ৭:০০ PM',
     closeBstLabel: 'ভোর ৪:০০ AM',
+    openBstLabelEn: '07:00 PM',
+    closeBstLabelEn: '04:00 AM',
     volatility: 'VERY_HIGH',
     bestPairs: ['EUR/USD', 'GBP/USD', 'USD/CAD', 'BTC/USDT', 'SOL/USDT'],
     characteristicsEn:
@@ -1108,7 +1118,9 @@ export const MarketIntelView: React.FC<MarketIntelViewProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">{isBn ? 'বাংলাদেশ সময়:' : 'BST Hours:'}</span>
                         <span className="font-mono font-semibold text-slate-200">
-                          {session.openBstLabel} – {session.closeBstLabel}
+                          {isBn
+                            ? `${session.openBstLabel} – ${session.closeBstLabel}`
+                            : `${session.openBstLabelEn} – ${session.closeBstLabelEn}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[11px]">

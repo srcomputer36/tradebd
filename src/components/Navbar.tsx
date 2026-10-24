@@ -20,6 +20,7 @@ import {
   Mail,
   ChevronRight,
   PenTool,
+  Globe,
 } from 'lucide-react';
 
 export type NavTab =
@@ -206,26 +207,72 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Zone 2: Portfolio Demo Balance, Language Selector & CTA */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          {/* Language Selector Dropdown */}
+          {/* Language & Translate Selector Dropdown */}
           <div className="relative" ref={langMenuRef}>
             <button
               onClick={() => setLangMenuOpen(!langMenuOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-medium text-slate-200 transition-colors cursor-pointer"
-              title="Change Language"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/90 hover:border-cyan-500/50 rounded-lg text-xs font-medium text-slate-200 transition-colors cursor-pointer"
+              title="Translate / Change Language"
             >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
               <span>{currentLangOption.flag}</span>
-              <span className="font-semibold uppercase tracking-wider text-[11px]">
-                {currentLangOption.code}
+              <span className="font-semibold tracking-wide text-[11px]">
+                {currentLangOption.code === 'en'
+                  ? 'EN'
+                  : currentLangOption.code === 'bn'
+                    ? 'বাংলা'
+                    : currentLangOption.nativeName}
               </span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {langMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95">
-                <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider border-b border-slate-800 mb-1">
-                  {t('selectLanguage')}
+              <div className="absolute right-0 mt-1.5 w-60 bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-slate-800 mb-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Translate Site Language
+                  </span>
+                  <span className="text-[10px] text-cyan-400 font-semibold">
+                    Default: EN
+                  </span>
                 </div>
-                <div className="space-y-0.5">
+
+                {/* Quick 1-click switch between English (Default) & Bengali */}
+                <div className="grid grid-cols-2 gap-1.5 mb-2 p-1 bg-slate-900/90 rounded-lg border border-slate-800">
+                  <button
+                    onClick={() => {
+                      setLanguage('en');
+                      setLangMenuOpen(false);
+                    }}
+                    className={`px-2 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      language === 'en'
+                        ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>🇺🇸</span>
+                    <span>English</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLanguage('bn');
+                      setLangMenuOpen(false);
+                    }}
+                    className={`px-2 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      language === 'bn'
+                        ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>🇧🇩</span>
+                    <span>বাংলা</span>
+                  </button>
+                </div>
+
+                <div className="text-[10px] font-semibold text-slate-400 px-2 py-0.5 uppercase tracking-wider">
+                  All Languages ({SUPPORTED_LANGUAGES.length})
+                </div>
+                <div className="space-y-0.5 max-h-60 overflow-y-auto pr-0.5 mt-1">
                   {SUPPORTED_LANGUAGES.map((lang) => {
                     const isActive = lang.code === language;
                     return (
@@ -241,11 +288,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                             : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span>{lang.flag}</span>
-                          <span>{lang.nativeName}</span>
+                          <span className="truncate">{lang.nativeName}</span>
+                          <span className="text-[10px] text-slate-500 truncate">
+                            ({lang.name})
+                          </span>
                         </div>
-                        {isActive && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+                        {isActive && <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
                       </button>
                     );
                   })}
@@ -448,8 +498,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Bottom Drawer Virtual Balance Card */}
+        {/* Bottom Drawer Language & Virtual Balance Card */}
         <div className="p-3.5 border-t border-slate-800 bg-slate-950/80 space-y-2.5">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+            <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{isBn ? 'ভাষা / অনুবাদ:' : 'Language:'}</span>
+            </span>
+            <select
+              aria-label="Select Language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as typeof language)}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 font-semibold focus:outline-none focus:border-cyan-500 cursor-pointer"
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.flag} {lang.nativeName} ({lang.name})
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-400">{t('demoFund')}:</span>
             <span className="font-mono font-bold text-emerald-400 text-sm">

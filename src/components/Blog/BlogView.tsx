@@ -248,7 +248,9 @@ export const BlogView: React.FC<BlogViewProps> = ({
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
   // Active editor tab language ('bn' or 'en') so Admin can write in either language & see both
-  const [editorLangTab, setEditorLangTab] = useState<'bn' | 'en'>('bn');
+  const [editorLangTab, setEditorLangTab] = useState<'bn' | 'en'>(
+    language === 'bn' ? 'bn' : 'en'
+  );
 
   // Bilingual Editor Form Fields (Bengali & English)
   const [titleBnInput, setTitleBnInput] = useState<string>('');
@@ -452,9 +454,9 @@ export const BlogView: React.FC<BlogViewProps> = ({
     scriptEl.textContent = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
-      headline: activeArticle.titleBn,
-      alternativeHeadline: activeArticle.titleEn,
-      description: activeArticle.excerptBn,
+      headline: isBn ? activeArticle.titleBn : activeArticle.titleEn,
+      alternativeHeadline: isBn ? activeArticle.titleEn : activeArticle.titleBn,
+      description: isBn ? activeArticle.excerptBn : activeArticle.excerptEn,
       author: {
         '@type': 'Organization',
         name: activeArticle.author || 'Tradebd Editorial Team',
@@ -472,7 +474,7 @@ export const BlogView: React.FC<BlogViewProps> = ({
         '@id': articleUrl,
       },
       keywords: activeArticle.keywords.join(', '),
-      inLanguage: ['bn-BD', 'en-US'],
+      inLanguage: ['en-US', 'bn-BD'],
     });
 
     return () => {

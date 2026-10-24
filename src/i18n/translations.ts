@@ -1,6 +1,6 @@
 import { Language } from '../context/LanguageContext';
 
-export const TRANSLATIONS: Record<Language, Record<string, string>> = {
+export const TRANSLATIONS: Partial<Record<Language, Record<string, string>>> = {
   en: {
     // Brand & Top Navigation
     appName: 'Tradebd',

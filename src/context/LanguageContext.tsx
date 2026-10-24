@@ -1,7 +1,24 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { TRANSLATIONS } from '../i18n/translations';
 
-export type Language = 'en' | 'bn' | 'es' | 'hi' | 'ar' | 'fr' | 'de' | 'ja';
+export type Language =
+  | 'en'
+  | 'bn'
+  | 'hi'
+  | 'ur'
+  | 'ar'
+  | 'es'
+  | 'fr'
+  | 'de'
+  | 'pt'
+  | 'id'
+  | 'ms'
+  | 'ru'
+  | 'tr'
+  | 'zh-CN'
+  | 'ja'
+  | 'ko'
+  | 'vi';
 
 export interface LanguageOption {
   code: Language;
@@ -9,18 +26,112 @@ export interface LanguageOption {
   nativeName: string;
   flag: string;
   dir?: 'ltr' | 'rtl';
+  nativeSupport?: boolean;
 }
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸', dir: 'ltr' },
-  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flag: '🇧🇩', dir: 'ltr' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', dir: 'ltr' },
+  { code: 'en', name: 'English (Default)', nativeName: 'English', flag: '🇺🇸', dir: 'ltr', nativeSupport: true },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flag: '🇧🇩', dir: 'ltr', nativeSupport: true },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳', dir: 'ltr' },
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇦🇪', dir: 'rtl' },
+  { code: 'ur', name: 'Urdu', nativeName: 'اردو', flag: '🇵🇰', dir: 'rtl' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', dir: 'rtl' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', dir: 'ltr' },
   { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', dir: 'ltr' },
   { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪', dir: 'ltr' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇧🇷', dir: 'ltr' },
+  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩', dir: 'ltr' },
+  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu', flag: '🇲🇾', dir: 'ltr' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺', dir: 'ltr' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', dir: 'ltr' },
+  { code: 'zh-CN', name: 'Chinese', nativeName: '简体中文', flag: '🇨🇳', dir: 'ltr' },
   { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵', dir: 'ltr' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷', dir: 'ltr' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳', dir: 'ltr' },
 ];
+
+const LANG_STORAGE_KEY = 'tradebd_lang_v2';
+
+declare global {
+  interface Window {
+    googleTranslateElementInit?: () => void;
+    google?: {
+      translate?: {
+        TranslateElement?: {
+          new (
+            options: {
+              pageLanguage: string;
+              autoDisplay?: boolean;
+              includedLanguages?: string;
+            },
+            elementId: string
+          ): unknown;
+        };
+      };
+    };
+  }
+}
+
+function triggerGoogleTranslate(targetLang: Language) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // English and Bengali are 100% natively translated across the entire app
+  if (targetLang === 'en' || targetLang === 'bn') {
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    const combo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+    if (combo && combo.value) {
+      combo.value = 'en';
+      combo.dispatchEvent(new Event('change'));
+    }
+    return;
+  }
+
+  document.cookie = `googtrans=/en/${targetLang}; path=/;`;
+
+  const applyComboChange = () => {
+    const combo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+    if (combo) {
+      combo.value = targetLang;
+      combo.dispatchEvent(new Event('change'));
+      return true;
+    }
+    return false;
+  };
+
+  if (applyComboChange()) return;
+
+  // Load Google Website Translator script on demand if not yet loaded
+  if (!document.getElementById('google-translate-script')) {
+    let container = document.getElementById('google_translate_element');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'google_translate_element';
+      container.className = 'hidden';
+      document.body.appendChild(container);
+    }
+
+    window.googleTranslateElementInit = () => {
+      if (window.google?.translate?.TranslateElement) {
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: 'en',
+            autoDisplay: false,
+          },
+          'google_translate_element'
+        );
+        setTimeout(applyComboChange, 400);
+        setTimeout(applyComboChange, 1200);
+      }
+    };
+
+    const script = document.createElement('script');
+    script.id = 'google-translate-script';
+    script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.async = true;
+    document.body.appendChild(script);
+  } else {
+    setTimeout(applyComboChange, 400);
+  }
+}
 
 interface LanguageContextType {
   language: Language;
@@ -35,23 +146,26 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     try {
-      const saved = localStorage.getItem('app_language') as Language;
+      // Remove legacy storage key so site defaults to English ('en')
+      localStorage.removeItem('app_language');
+      const saved = localStorage.getItem(LANG_STORAGE_KEY) as Language;
       if (saved && SUPPORTED_LANGUAGES.some((l) => l.code === saved)) {
         return saved;
       }
     } catch (e) {
       // fallback
     }
-    return 'en'; // Global default
+    return 'en'; // Global default is English
   });
 
   const setLanguage = (newLang: Language) => {
     setLanguageState(newLang);
     try {
-      localStorage.setItem('app_language', newLang);
+      localStorage.setItem(LANG_STORAGE_KEY, newLang);
     } catch (e) {
       // ignore
     }
+    triggerGoogleTranslate(newLang);
   };
 
   const currentLangOption =
@@ -61,6 +175,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    if (language !== 'en' && language !== 'bn') {
+      triggerGoogleTranslate(language);
+    }
   }, [language, isRtl]);
 
   const t = (key: string): string => {

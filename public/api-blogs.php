@@ -119,6 +119,7 @@ function syncSitemap($sitemapPath, $customArticles) {
     ['loc' => 'https://tradebd.online/academy', 'freq' => 'weekly', 'prio' => '0.9'],
     ['loc' => 'https://tradebd.online/patterns', 'freq' => 'weekly', 'prio' => '0.85'],
     ['loc' => 'https://tradebd.online/calculator', 'freq' => 'weekly', 'prio' => '0.85'],
+    ['loc' => 'https://tradebd.online/mentor', 'freq' => 'weekly', 'prio' => '0.85'],
     ['loc' => 'https://tradebd.online/blog/forex-trading-bangla-complete-guide', 'freq' => 'weekly', 'prio' => '0.85'],
     ['loc' => 'https://tradebd.online/blog/candlestick-chart-patterns-bangla-guide', 'freq' => 'weekly', 'prio' => '0.85'],
     ['loc' => 'https://tradebd.online/blog/risk-management-lot-size-stop-loss-formula', 'freq' => 'weekly', 'prio' => '0.85'],
