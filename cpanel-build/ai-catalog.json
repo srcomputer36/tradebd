@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Tradebd",
+  "version": "1.0.0",
+  "description": "Tradebd Financial Trading Academy & Market Simulator",
+  "url": "https://tradebd.online",
+  "provider": {
+    "name": "Tradebd Financial Education Academy",
+    "url": "https://tradebd.online"
+  },
+  "endpoints": [
+    {
+      "name": "academy",
+      "path": "/academy",
+      "description": "Trading education courses and guides"
+    },
+    {
+      "name": "blog",
+      "path": "/blog",
+      "description": "Bilingual educational trading articles"
+    },
+    {
+      "name": "calendar",
+      "path": "/calendar",
+      "description": "Economic events and global market trading sessions in BST"
+    },
+    {
+      "name": "patterns",
+      "path": "/patterns",
+      "description": "Candlestick chart patterns guide"
+    },
+    {
+      "name": "calculator",
+      "path": "/calculator",
+      "description": "Risk and lot size position calculator"
+    }
+  ]
+}

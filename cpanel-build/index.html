@@ -13,37 +13,74 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      (function () {
+      (function() {
         try {
           var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
           var currentFetch = nativeFetch;
           Object.defineProperty(window, 'fetch', {
             configurable: true,
             enumerable: true,
-            get: function () {
+            get: function() {
               return currentFetch;
             },
-            set: function (newFetch) {
+            set: function(newFetch) {
               currentFetch = newFetch;
-            },
+            }
           });
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
+
+        var origConsoleError = console.error ? console.error.bind(console) : null;
+        if (origConsoleError) {
+          console.error = function() {
+            var firstArg = arguments[0] ? String(arguments[0]) : '';
+            if (
+              firstArg.indexOf('failed to connect to websocket') !== -1 ||
+              firstArg.indexOf('WebSocket closed without opened') !== -1
+            ) {
+              return;
+            }
+            return origConsoleError.apply(console, arguments);
+          };
+        }
+
+        window.addEventListener('error', function(event) {
+          if (
+            event &&
+            ((event.filename && event.filename.indexOf('chrome-extension://') !== -1) ||
+              (event.message &&
+                (event.message.indexOf('Cannot set property fetch') !== -1 ||
+                  event.message.indexOf('WebSocket closed without opened') !== -1 ||
+                  event.message.indexOf('failed to connect to websocket') !== -1)))
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event && event.reason;
+          var msg = (reason && (reason.stack || reason.message || String(reason))) || '';
+          if (
+            typeof msg === 'string' &&
+            (msg.indexOf('chrome-extension://') !== -1 ||
+              msg.indexOf('Cannot set property fetch') !== -1 ||
+              msg.indexOf('WebSocket closed without opened') !== -1 ||
+              msg.indexOf('failed to connect to websocket') !== -1)
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
       })();
     </script>
     <title>Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম</title>
-    <meta
-      name="description"
-      content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।"
-    />
-    <meta
-      name="keywords"
-      content="ফরেক্স ট্রেডিং বাংলা, ট্রেডিং শেখার নিয়ম, ক্যান্ডেলস্টিক চার্ট প্যাটার্ন বাংলা, ডেমো ট্রেডিং একাউন্ট, ক্রিপ্টো ট্রেডিং বাংলাদেশ, ফরেক্স ক্যালেন্ডার বাংলাদেশ সময়, লট সাইজ ক্যালকুলেটর, পেপার ট্রেডিং সিমুলেটর, Tradebd, tradebd.online, TradeBangla, Forex Trading Bangladesh, Crypto Paper Trading Simulator, Technical Analysis Academy"
-    />
+    <meta name="description" content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।" />
+    <meta name="keywords" content="ফরেক্স ট্রেডিং বাংলা, ট্রেডিং শেখার নিয়ম, ক্যান্ডেলস্টিক চার্ট প্যাটার্ন বাংলা, ডেমো ট্রেডিং একাউন্ট, ক্রিপ্টো ট্রেডিং বাংলাদেশ, ফরেক্স ক্যালেন্ডার বাংলাদেশ সময়, লট সাইজ ক্যালকুলেটর, পেপার ট্রেডিং সিমুলেটর, Tradebd, tradebd.online, TradeBangla, Forex Trading Bangladesh, Crypto Paper Trading Simulator, Technical Analysis Academy" />
     <meta name="author" content="Tradebd Financial Education Academy" />
-    <meta
-      name="robots"
-      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
-    />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="geo.region" content="BD" />
     <meta name="geo.placename" content="Bangladesh" />
     <meta name="theme-color" content="#0b0f19" />
@@ -56,23 +93,11 @@
     <meta property="og:locale" content="bn_BD" />
     <meta property="og:locale:alternate" content="en_US" />
     <meta property="og:url" content="https://tradebd.online/" />
-    <meta
-      property="og:title"
-      content="Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম"
-    />
-    <meta
-      property="og:description"
-      content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।"
-    />
+    <meta property="og:title" content="Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম" />
+    <meta property="og:description" content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম"
-    />
-    <meta
-      name="twitter:description"
-      content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।"
-    />
+    <meta name="twitter:title" content="Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম" />
+    <meta name="twitter:description" content="Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -165,44 +190,19 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-      @theme {
-        --font-sans: "Plus Jakarta Sans", "Hind Siliguri", system-ui, -apple-system, sans-serif;
-        --font-mono: "JetBrains Mono", monospace;
-      }
-      body {
-        background-color: #0b0f19;
-        color: #e2e8f0;
-        font-family: "Plus Jakarta Sans", "Hind Siliguri", system-ui, -apple-system, sans-serif;
-      }
-      * {
-        border-color: rgba(255, 255, 255, 0.08);
-      }
-    </style>
-    <script type="importmap">
-      {
-        "imports": {
-          "react": "https://esm.sh/react@19.0.0",
-          "react-dom": "https://esm.sh/react-dom@19.0.0",
-          "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-          "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-          "lucide-react": "https://esm.sh/lucide-react@0.546.0?external=react",
-          "motion/react": "https://esm.sh/motion@12.23.24/react?external=react,react-dom"
-        }
-      }
-    </script>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    </noscript>
+    <script type="module" crossorigin src="/assets/index-CTiyBUXp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-la_ZsWYt.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-icons-CxtmC_yN.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-D3Vc4K3A.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DIbWdClf.css">
   </head>
   <body class="bg-[#0b0f19] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
-    <div id="root">
-      <div class="min-h-screen flex items-center justify-center bg-[#0b0f19] text-emerald-400 font-bold text-sm tracking-wide">
-        Tradebd লোড হচ্ছে...
-      </div>
-    </div>
+    <div id="root"></div>
     <noscript>
       <main>
         <h1>Tradebd – ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি এবং টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম</h1>
@@ -226,100 +226,6 @@
         <p>Educational Disclaimer: Tradebd is strictly an educational academy and virtual paper-trading simulator. Nothing on this site constitutes financial or investment advice.</p>
       </main>
     </noscript>
-    <script type="module">
-      import { transform } from 'https://esm.sh/sucrase@3.35.0';
-
-      const BUILD_VERSION = '20261022-v10';
-
-      const files = [
-        'types/trading.ts',
-        'i18n/translations.ts',
-        'context/LanguageContext.tsx',
-        'data/assets.ts',
-        'data/academyData.ts',
-        'data/patternsData.ts',
-        'data/blogData.ts',
-        'utils/indicators.ts',
-        'components/Patterns/PatternSvg.tsx',
-        'components/Patterns/PatternGallery.tsx',
-        'components/Navbar.tsx',
-        'components/MarketSectionsBar.tsx',
-        'components/Chart/CandlestickChart.tsx',
-        'components/Simulator/PaperTradingPanel.tsx',
-        'components/Academy/AcademyView.tsx',
-        'components/Blog/BlogView.tsx',
-        'components/Calculator/RiskCalculator.tsx',
-        'components/Mentor/AiMentorView.tsx',
-        'components/MarketIntel/MarketIntelView.tsx',
-        'components/Legal/LegalPagesView.tsx',
-        'App.tsx',
-        'main.tsx',
-      ];
-
-      function normalizePath(dir, rel) {
-        const parts = (dir === '.' ? [] : dir.split('/')).concat(rel.split('/'));
-        const out = [];
-        for (const p of parts) {
-          if (!p || p === '.') continue;
-          if (p === '..') out.pop();
-          else out.push(p);
-        }
-        return out.join('/');
-      }
-
-      async function boot() {
-        const sources = await Promise.all(
-          files.map(async (f) => {
-            const res = await fetch('/src/' + f + '?v=' + BUILD_VERSION, { cache: 'no-store' });
-            if (!res.ok) {
-              throw new Error('Failed to load /src/' + f + ' (' + res.status + ')');
-            }
-            const text = await res.text();
-            return [f, text];
-          })
-        );
-
-        const blobUrls = {};
-        for (const [f, rawSource] of sources) {
-          const key = f.replace(/\.(tsx|ts)$/, '');
-          const dir = key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '.';
-          const cleaned = rawSource.replace(/import\s+['"]\.\/index\.css['"];?/g, '');
-          let compiled = transform(cleaned, {
-            transforms: ['typescript', 'jsx'],
-            jsxRuntime: 'automatic',
-            production: true,
-          }).code;
-
-          compiled = compiled.replace(
-            /((?:from|import)\s+['"])(\.[^'"]+)(['"])/g,
-            (match, prefix, relPath, suffix) => {
-              const targetKey = normalizePath(dir, relPath.replace(/\.(tsx|ts|js)$/, ''));
-              const blobUrl = blobUrls[targetKey];
-              return blobUrl ? prefix + blobUrl + suffix : match;
-            }
-          );
-
-          if (!compiled.trim()) compiled = 'export {};';
-          blobUrls[key] = URL.createObjectURL(
-            new Blob([compiled], { type: 'text/javascript' })
-          );
-        }
-
-        await import(blobUrls['main']);
-      }
-
-      boot().catch((err) => {
-        console.error('Tradebd boot error:', err);
-        const rootEl = document.getElementById('root');
-        if (rootEl) {
-          rootEl.innerHTML =
-            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b0f19;color:#f8fafc;font-family:sans-serif;padding:24px;text-align:center;">' +
-            '<div style="color:#10b981;font-weight:800;font-size:18px;margin-bottom:8px;">Tradebd আপডেট লোড হচ্ছে...</div>' +
-            '<p style="color:#94a3b8;font-size:13px;max-width:420px;margin-bottom:16px;">ব্রাউজার ক্যাশের কারণে পুরনো ফাইল লোড হয়েছিল। নিচের বাটনে ক্লিক করে পেজটি রিলোড করুন।</p>' +
-            '<button onclick="window.location.reload(true)" style="background:#10b981;color:#020617;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;">রিলোড করুন (Reload Now)</button>' +
-            '</div>';
-        }
-      });
-    </script>
   </body>
 </html>
+

@@ -1086,6 +1086,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       <div ref={containerRef} className="relative flex-1 w-full h-[440px] min-h-[360px] select-none">
         <canvas
           ref={canvasRef}
+          role="img"
+          aria-label={`${asset.symbol} Candlestick Technical Chart`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -1144,6 +1146,11 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
               value={Math.round(-clampedPanOffset)}
               onChange={(e) => setPanOffset(-parseFloat(e.target.value))}
               className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              aria-label={
+                language === 'bn'
+                  ? 'স্লাইডার টেনে চার্ট আগে বা পিছনে নিন'
+                  : 'Drag slider to scrub chart backward or forward'
+              }
               title={
                 language === 'bn'
                   ? 'স্লাইডার টেনে চার্ট আগে বা পিছনে নিন'
@@ -1170,6 +1177,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             onClick={handleZoomOut}
             disabled={visibleCandleCount >= Math.min(MAX_VISIBLE_CANDLES, candles.length)}
             className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded border border-slate-700 transition-colors cursor-pointer"
+            aria-label={language === 'bn' ? 'জুম আউট' : 'Zoom Out'}
             title={language === 'bn' ? 'জুম আউট' : 'Zoom Out'}
           >
             <ZoomOut className="w-3.5 h-3.5 text-amber-400" />
@@ -1185,6 +1193,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             onClick={handleZoomIn}
             disabled={visibleCandleCount <= MIN_VISIBLE_CANDLES}
             className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded border border-slate-700 transition-colors cursor-pointer"
+            aria-label={language === 'bn' ? 'জুম ইন' : 'Zoom In'}
             title={language === 'bn' ? 'জুম ইন' : 'Zoom In'}
           >
             <ZoomIn className="w-3.5 h-3.5 text-emerald-400" />

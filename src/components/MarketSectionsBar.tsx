@@ -167,9 +167,9 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-extrabold text-amber-300 tracking-wide uppercase">
+                    <h2 className="text-xs font-extrabold text-amber-300 tracking-wide uppercase">
                       {labels.cryptoTitle}
-                    </h3>
+                    </h2>
                     <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold rounded">
                       {CRYPTO_ASSETS.length} PAIRS
                     </span>
@@ -246,9 +246,9 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-extrabold text-cyan-300 tracking-wide uppercase">
+                    <h2 className="text-xs font-extrabold text-cyan-300 tracking-wide uppercase">
                       {labels.forexTitle}
-                    </h3>
+                    </h2>
                     <span className="px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold rounded">
                       {FOREX_ASSETS.length} PAIRS
                     </span>

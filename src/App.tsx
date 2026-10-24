@@ -3,21 +3,57 @@ import { TRADING_ASSETS, generateCandles, simulateTick } from './data/assets';
 import { Asset, Candle, OrderSide, Position, TradeHistory } from './types/trading';
 import { Navbar, NavTab } from './components/Navbar';
 import { CandlestickChart } from './components/Chart/CandlestickChart';
-import { PaperTradingPanel } from './components/Simulator/PaperTradingPanel';
-import { AcademyView } from './components/Academy/AcademyView';
-import { PatternGallery } from './components/Patterns/PatternGallery';
-import { RiskCalculator } from './components/Calculator/RiskCalculator';
-import { AiMentorView } from './components/Mentor/AiMentorView';
 import { MarketSectionsBar } from './components/MarketSectionsBar';
-import {
-  MarketIntelView,
-  GLOBAL_SESSIONS,
-  ECONOMIC_CALENDAR_EVENTS,
-  isSessionOpenAtUtc,
-} from './components/MarketIntel/MarketIntelView';
-import { LegalPagesView, LegalSection } from './components/Legal/LegalPagesView';
-import { BlogView } from './components/Blog/BlogView';
+import type { LegalSection } from './components/Legal/LegalPagesView';
 import { useLanguage } from './context/LanguageContext';
+
+const PaperTradingPanel = React.lazy(() =>
+  import('./components/Simulator/PaperTradingPanel').then((m) => ({ default: m.PaperTradingPanel }))
+);
+const MarketIntelView = React.lazy(() =>
+  import('./components/MarketIntel/MarketIntelView').then((m) => ({ default: m.MarketIntelView }))
+);
+const AcademyView = React.lazy(() =>
+  import('./components/Academy/AcademyView').then((m) => ({ default: m.AcademyView }))
+);
+const PatternGallery = React.lazy(() =>
+  import('./components/Patterns/PatternGallery').then((m) => ({ default: m.PatternGallery }))
+);
+const RiskCalculator = React.lazy(() =>
+  import('./components/Calculator/RiskCalculator').then((m) => ({ default: m.RiskCalculator }))
+);
+const AiMentorView = React.lazy(() =>
+  import('./components/Mentor/AiMentorView').then((m) => ({ default: m.AiMentorView }))
+);
+const LegalPagesView = React.lazy(() =>
+  import('./components/Legal/LegalPagesView').then((m) => ({ default: m.LegalPagesView }))
+);
+const BlogView = React.lazy(() =>
+  import('./components/Blog/BlogView').then((m) => ({ default: m.BlogView }))
+);
+
+const LazyFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-slate-400 py-12">
+    <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+    <span className="text-xs font-mono text-slate-400">Loading module...</span>
+  </div>
+);
+
+const QUICK_SESSIONS = [
+  { nameEn: 'Sydney', nameBn: 'সিডনি', openUtcHour: 22, closeUtcHour: 7 },
+  { nameEn: 'Tokyo', nameBn: 'টোকিও', openUtcHour: 0, closeUtcHour: 9 },
+  { nameEn: 'London', nameBn: 'লন্ডন', openUtcHour: 8, closeUtcHour: 17 },
+  { nameEn: 'New York', nameBn: 'নিউ ইয়র্ক', openUtcHour: 13, closeUtcHour: 22 },
+];
+
+const NEXT_HIGH_IMPACT_PREVIEW = {
+  timeBst: '06:30 PM',
+  flag: '🇺🇸',
+  titleEn: 'US Core CPI Inflation Rate (MoM)',
+  titleBn: 'যুক্তরাষ্ট্রের কোর মুদ্রাস্ফীতি হার (US Core CPI MoM)',
+  previous: '0.2%',
+  forecast: '0.3%',
+};
 import {
   TrendingUp,
   TrendingDown,
@@ -456,12 +492,12 @@ export default function App() {
 
   const nowUtcFloat =
     new Date().getUTCHours() + new Date().getUTCMinutes() / 60;
-  const activeSessionsNow = GLOBAL_SESSIONS.filter((s) =>
-    isSessionOpenAtUtc(s, nowUtcFloat)
+  const activeSessionsNow = QUICK_SESSIONS.filter((s) =>
+    s.openUtcHour < s.closeUtcHour
+      ? nowUtcFloat >= s.openUtcHour && nowUtcFloat < s.closeUtcHour
+      : nowUtcFloat >= s.openUtcHour || nowUtcFloat < s.closeUtcHour
   );
-  const nextHighImpactEvent =
-    ECONOMIC_CALENDAR_EVENTS.find((e) => e.status === 'UPCOMING' && e.impact === 'HIGH') ||
-    ECONOMIC_CALENDAR_EVENTS[0];
+  const nextHighImpactEvent = NEXT_HIGH_IMPACT_PREVIEW;
 
   const lastCandle = candles[candles.length - 1];
   const currentPrice = lastCandle ? lastCandle.close : (assetPrices[selectedAsset.id] ?? selectedAsset.basePrice);
@@ -1020,6 +1056,11 @@ export default function App() {
 
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col">
+        <h1 className="sr-only">
+          {language === 'bn'
+            ? 'Tradebd – ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি এবং টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম'
+            : 'Tradebd – Forex & Crypto Trading Academy and Technical Analysis Platform'}
+        </h1>
         {/* TAB 1: CHART ANALYSIS & QUICK TRADE WORKSPACE */}
         {activeTab === 'CHART' && (
           <div className="flex flex-col gap-4 flex-1">
@@ -1152,10 +1193,10 @@ export default function App() {
                 {/* Technical Analysis Checklist for Beginners */}
                 <div className="bg-[#0b0f19] border border-slate-800 rounded-lg p-4 space-y-3 flex-1 flex flex-col justify-between">
                   <div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
                       <span>{t('checklistTitle')}</span>
-                    </h4>
+                    </h3>
                     <ul className="space-y-2 text-xs text-slate-300">
                       <li className="flex items-start gap-2">
                         <span className="text-emerald-400 font-bold shrink-0">1.</span>
@@ -1261,76 +1302,90 @@ export default function App() {
               assetPrices={assetPrices}
               onSelectAsset={handleSelectAsset}
             />
-            <PaperTradingPanel
-              currentAsset={selectedAsset}
-              currentPrice={currentPrice}
-              balance={balance}
-              positions={positions}
-              tradeHistory={tradeHistory}
-              onOpenPosition={handleOpenPosition}
-              onClosePosition={handleClosePosition}
-              onResetAccount={handleResetDemo}
-              onSetCustomBalance={(amt) => handleApplyCustomBalanceOnly(amt)}
-              defaultSide={simulatorDefaultSide}
-            />
+            <React.Suspense fallback={<LazyFallback />}>
+              <PaperTradingPanel
+                currentAsset={selectedAsset}
+                currentPrice={currentPrice}
+                balance={balance}
+                positions={positions}
+                tradeHistory={tradeHistory}
+                onOpenPosition={handleOpenPosition}
+                onClosePosition={handleClosePosition}
+                onResetAccount={handleResetDemo}
+                onSetCustomBalance={(amt) => handleApplyCustomBalanceOnly(amt)}
+                defaultSide={simulatorDefaultSide}
+              />
+            </React.Suspense>
           </div>
         )}
 
         {/* TAB 2.5: ECONOMIC CALENDAR, TRADING SESSIONS & MARKET NEWS */}
         {activeTab === 'CALENDAR' && (
-          <MarketIntelView
-            onSelectAssetAndGoToChart={(asset) => {
-              handleSelectAsset(asset);
-              handleSelectTab('CHART');
-            }}
-            onSimulateVolatilitySpike={handleSimulateVolatilitySpike}
-          />
+          <React.Suspense fallback={<LazyFallback />}>
+            <MarketIntelView
+              onSelectAssetAndGoToChart={(asset) => {
+                handleSelectAsset(asset);
+                handleSelectTab('CHART');
+              }}
+              onSimulateVolatilitySpike={handleSimulateVolatilitySpike}
+            />
+          </React.Suspense>
         )}
 
         {/* TAB 3: TRADING ACADEMY & LESSONS */}
-        {activeTab === 'ACADEMY' && <AcademyView />}
+        {activeTab === 'ACADEMY' && (
+          <React.Suspense fallback={<LazyFallback />}>
+            <AcademyView />
+          </React.Suspense>
+        )}
 
         {/* TAB 3.5: EDUCATIONAL BLOG & ARTICLE PUBLISHING STUDIO */}
         {activeTab === 'BLOG' && (
-          <BlogView
-            initialSlug={blogSlug}
-            onSelectSlug={(nextSlug) => {
-              setBlogSlug(nextSlug);
-              const target = nextSlug ? `/blog/${nextSlug}` : '/blog';
-              try {
-                window.history.pushState(null, '', target);
-              } catch {
-                window.location.hash = nextSlug ? `blog/${nextSlug}` : 'blog';
-              }
-            }}
-            onNavigateTab={(tab) => handleSelectTab(tab)}
-            onShowToast={showToast}
-          />
+          <React.Suspense fallback={<LazyFallback />}>
+            <BlogView
+              initialSlug={blogSlug}
+              onSelectSlug={(nextSlug) => {
+                setBlogSlug(nextSlug);
+                const target = nextSlug ? `/blog/${nextSlug}` : '/blog';
+                try {
+                  window.history.pushState(null, '', target);
+                } catch {
+                  window.location.hash = nextSlug ? `blog/${nextSlug}` : 'blog';
+                }
+              }}
+              onNavigateTab={(tab) => handleSelectTab(tab)}
+              onShowToast={showToast}
+            />
+          </React.Suspense>
         )}
 
         {/* TAB 4: PATTERNS CHEATSHEET & GALLERY */}
         {activeTab === 'PATTERNS' && (
-          <PatternGallery
-            onSelectPatternForChart={(pattern) => {
-              handleSelectTab('CHART');
-              showToast(
-                language === 'bn'
-                  ? `📊 "${pattern.nameBn}" প্যাটার্নটি লাইভ চার্টে খুঁজুন — এন্ট্রি: ${pattern.entryRuleBn}`
-                  : `📊 Practice "${pattern.name}" on Live Chart — Entry: ${pattern.entryRule}`,
-                'info'
-              );
-            }}
-          />
+          <React.Suspense fallback={<LazyFallback />}>
+            <PatternGallery
+              onSelectPatternForChart={(pattern) => {
+                handleSelectTab('CHART');
+                showToast(
+                  language === 'bn'
+                    ? `📊 "${pattern.nameBn}" প্যাটার্নটি লাইভ চার্টে খুঁজুন — এন্ট্রি: ${pattern.entryRuleBn}`
+                    : `📊 Practice "${pattern.name}" on Live Chart — Entry: ${pattern.entryRule}`,
+                  'info'
+                );
+              }}
+            />
+          </React.Suspense>
         )}
 
         {/* TAB 5: RISK & POSITION SIZING CALCULATOR */}
         {activeTab === 'CALCULATOR' && (
-          <RiskCalculator
-            currentBalance={balance}
-            initialEntryPrice={currentPrice}
-            selectedAsset={selectedAsset}
-            assetPrices={assetPrices}
-          />
+          <React.Suspense fallback={<LazyFallback />}>
+            <RiskCalculator
+              currentBalance={balance}
+              initialEntryPrice={currentPrice}
+              selectedAsset={selectedAsset}
+              assetPrices={assetPrices}
+            />
+          </React.Suspense>
         )}
 
         {/* TAB 6: AI TRADE MENTOR & ANALYZER */}
@@ -1342,21 +1397,25 @@ export default function App() {
               assetPrices={assetPrices}
               onSelectAsset={handleSelectAsset}
             />
-            <AiMentorView currentAsset={selectedAsset} currentPrice={currentPrice} />
+            <React.Suspense fallback={<LazyFallback />}>
+              <AiMentorView currentAsset={selectedAsset} currentPrice={currentPrice} />
+            </React.Suspense>
           </div>
         )}
 
         {/* TAB 7: LEGAL, ABOUT, PRIVACY POLICY, DISCLAIMER & CONTACT PAGES */}
         {activeTab === 'LEGAL' && (
-          <LegalPagesView
-            activeSection={legalSection}
-            onSelectSection={(sec) => {
-              openLegalPage(sec);
-            }}
-            onBackToChart={() => {
-              handleSelectTab('CHART');
-            }}
-          />
+          <React.Suspense fallback={<LazyFallback />}>
+            <LegalPagesView
+              activeSection={legalSection}
+              onSelectSection={(sec) => {
+                openLegalPage(sec);
+              }}
+              onBackToChart={() => {
+                handleSelectTab('CHART');
+              }}
+            />
+          </React.Suspense>
         )}
       </main>
 
@@ -1379,7 +1438,7 @@ export default function App() {
                   ? 'Tradebd হলো একটি সম্পূর্ণ বিনামূল্যে ব্যবহারযোগ্য ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম। আসল অর্থ ঝুঁকিতে না ফেলে ট্রেডিং দক্ষতা ও রিস্ক ম্যানেজমেন্ট শিখুন।'
                   : 'Tradebd is a free educational trading academy, interactive technical chart analysis workspace, and virtual paper-trading simulator designed to build disciplined risk management skills.'}
               </p>
-              <div className="text-[11px] text-slate-500 font-mono">
+              <div className="text-[11px] text-slate-400 font-mono">
                 Support: support@tradebd.online · Dhaka, Bangladesh (BST UTC+6)
               </div>
             </div>
@@ -1531,16 +1590,16 @@ export default function App() {
           </div>
 
           {/* YMYL Financial Educational Disclaimer & Copyright */}
-          <div className="pt-5 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-500 leading-relaxed">
+          <div className="pt-5 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400 leading-relaxed">
             <p>
-              <strong className="text-slate-400">
+              <strong className="text-slate-300">
                 {language === 'bn' ? 'আর্থিক ঝুঁকি ডিসক্লেইমার: ' : 'Educational & Risk Disclaimer: '}
               </strong>
               {language === 'bn'
                 ? 'Tradebd (tradebd.online) শুধুমাত্র একটি শিক্ষামূলক প্ল্যাটফর্ম এবং ভার্চুয়াল ট্রেডিং সিমুলেটর। এখানে প্রদত্ত যেকোনো কাস্টম ডেমো ব্যালেন্স সম্পূর্ণ কাল্পনিক এবং এই ওয়েবসাইটের কোনো তথ্য বা বিশ্লেষণ সরাসরি বিনিয়োগ পরামর্শ (Financial Advice) নয়। ফরেক্স ও ক্রিপ্টোকারেন্সি মার্কেটে বাস্তব অর্থ বিনিয়োগের পূর্বে নিজ দায়িত্বে ঝুঁকি যাচাই করুন।'
                 : 'Tradebd (tradebd.online) is strictly an educational platform and virtual paper-trading simulator. All customizable demo balances are virtual with no monetary value. Content provided on this site does not constitute financial or investment advice.'}
             </p>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-slate-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-slate-400">
               <span>
                 © {new Date().getFullYear()} Tradebd (tradebd.online). All rights reserved.
               </span>

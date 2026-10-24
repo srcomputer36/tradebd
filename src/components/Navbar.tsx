@@ -338,7 +338,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex-1 overflow-y-auto p-3 space-y-5">
           {/* Primary Platform Navigation */}
           <div className="space-y-1">
-            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {isBn ? 'ট্রেডিং ও অ্যানালাইসিস টুলস' : 'Trading & Analysis Tools'}
             </div>
 
@@ -395,7 +395,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Legal & Information Links */}
           <div className="space-y-1 pt-2 border-t border-slate-800/80">
-            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {isBn ? 'আইনি ও তথ্য পাতা (Legal & Info)' : 'Legal & Information'}
             </div>
 

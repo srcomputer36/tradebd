@@ -1,0 +1,29 @@
+# Tradebd (tradebd.online)
+
+> Tradebd is a free financial education academy, technical analysis chart platform, and real-time virtual paper trading simulator for Forex and Cryptocurrency markets in Bengali and English.
+
+## About
+Tradebd provides free market education, live candlestick charts with customizable indicators (EMA, SMA, Bollinger Bands, RSI, Volume), a risk-free paper trading simulator with customizable balances ($50 to $10,000,000), global trading session clocks converted to Bangladesh Standard Time (BST / UTC+6), an economic calendar, and comprehensive technical analysis guides.
+
+## Core Features
+- **Live Candlestick Chart**: Interactive charts for BTC/USDT, ETH/USDT, EUR/USD, GBP/USD, USD/JPY, and XAU/USD.
+- **Paper Trading Simulator**: Long/Short execution, custom leverage, automated stop-loss and take-profit targets, zero real-money risk.
+- **Trading Academy**: Step-by-step guides from beginner basics to advanced market structure, price action, and risk management.
+- **Candlestick Pattern Gallery**: Visual cheat sheet and reference guide for 18+ high-probability candlestick patterns.
+- **Economic Calendar & Global Sessions**: Live countdowns and session tracker for Sydney, Tokyo, London, and New York in BST (UTC+6).
+- **Position Size & Lot Calculator**: Calculates lot size, pip value, and risk-to-reward ratio.
+- **Educational Trading Blog**: Bilingual articles in Bengali and English covering forex trading strategies, risk management, and market psychology.
+
+## URLs & Site Navigation
+- Homepage / Live Chart: https://tradebd.online/
+- Paper Trading Simulator: https://tradebd.online/simulator
+- Economic Calendar & Sessions: https://tradebd.online/calendar
+- Trading Academy: https://tradebd.online/academy
+- Candlestick Patterns: https://tradebd.online/patterns
+- Risk & Lot Calculator: https://tradebd.online/calculator
+- Educational Blog: https://tradebd.online/blog
+- About Us: https://tradebd.online/about
+- Privacy Policy: https://tradebd.online/privacy
+- Terms of Use: https://tradebd.online/terms
+- Risk Disclaimer: https://tradebd.online/disclaimer
+- Sitemap: https://tradebd.online/sitemap.xml
