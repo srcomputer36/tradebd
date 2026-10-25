@@ -1,22 +1,41 @@
+AddDefaultCharset UTF-8
+AddCharset UTF-8 .html .css .js .mjs .xml .json .txt .svg .webmanifest
+
+AddType text/html .html
 AddType text/plain .ts .tsx .txt
 AddType application/xml .xml
 AddType application/json .json
+AddType application/manifest+json .webmanifest
 AddType text/javascript .js .mjs
 AddType text/css .css
+AddType image/svg+xml .svg
+AddType image/png .png
+AddType image/x-icon .ico
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
+  # Force 301 Permanent Redirect from www.tradebd.online and HTTP to https://tradebd.online
+  RewriteCond %{HTTP_HOST} ^www\.tradebd\.online$ [NC,OR]
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP_HOST} ^(?:www\.)?tradebd\.online$ [NC]
+  RewriteRule ^(.*)$ https://tradebd.online/$1 [L,R=301]
+
   # Block direct access to internal blog storage & admin password hash files
   RewriteRule ^(\.tradebd-admin-hash\.php|blogs-data\.json)$ - [F,L]
 
-  # Do not rewrite existing files (sitemap.xml, robots.txt, llms.txt, ai-catalog.json, api-blogs.php, google*.html), assets, or API routes
+  # Do not rewrite existing SEO, icon, manifest, or API files
   RewriteRule ^index\.html$ - [L]
   RewriteRule ^sitemap\.xml$ - [L]
   RewriteRule ^robots\.txt$ - [L]
   RewriteRule ^llms\.txt$ - [L]
   RewriteRule ^ai-catalog\.json$ - [L]
+  RewriteRule ^site\.webmanifest$ - [L]
+  RewriteRule ^favicon\.(ico|svg)$ - [L]
+  RewriteRule ^apple-touch-icon\.png$ - [L]
+  RewriteRule ^logo\.svg$ - [L]
+  RewriteRule ^og-banner\.(png|svg)$ - [L]
   RewriteRule ^api-blogs\.php$ - [L]
   RewriteRule ^google[a-z0-9]+\.html$ - [L]
   RewriteCond %{REQUEST_URI} !^/api/
@@ -29,7 +48,7 @@ AddType text/css .css
 </IfModule>
 
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/manifest+json application/xml image/svg+xml
 </IfModule>
 
 <IfModule mod_expires.c>
@@ -37,6 +56,12 @@ AddType text/css .css
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType application/manifest+json "access plus 1 week"
   ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
 
@@ -44,4 +69,7 @@ AddType text/css .css
   Header set X-Content-Type-Options "nosniff"
   Header set X-XSS-Protection "1; mode=block"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
+  <FilesMatch "\.(html|htm)$">
+    Header set Content-Type "text/html; charset=UTF-8"
+  </FilesMatch>
 </IfModule>

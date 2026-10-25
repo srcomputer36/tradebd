@@ -146,6 +146,12 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     try {
+      if (typeof window !== 'undefined' && window.location.search) {
+        const urlLang = new URLSearchParams(window.location.search).get('lang') as Language | null;
+        if (urlLang && SUPPORTED_LANGUAGES.some((l) => l.code === urlLang)) {
+          return urlLang;
+        }
+      }
       // Remove legacy storage key so site defaults to English ('en')
       localStorage.removeItem('app_language');
       const saved = localStorage.getItem(LANG_STORAGE_KEY) as Language;
@@ -162,6 +168,15 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     setLanguageState(newLang);
     try {
       localStorage.setItem(LANG_STORAGE_KEY, newLang);
+      if (typeof window !== 'undefined' && window.location.search.includes('lang=')) {
+        const url = new URL(window.location.href);
+        if (newLang === 'en') {
+          url.searchParams.delete('lang');
+        } else {
+          url.searchParams.set('lang', newLang);
+        }
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+      }
     } catch (e) {
       // ignore
     }

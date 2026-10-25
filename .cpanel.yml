@@ -11,6 +11,13 @@ deployment:
     - /bin/cp -f public/sitemap.xml $DEPLOYPATH/sitemap.xml
     - /bin/cp -f public/llms.txt $DEPLOYPATH/llms.txt
     - /bin/cp -f public/ai-catalog.json $DEPLOYPATH/ai-catalog.json
+    - /bin/cp -f public/site.webmanifest $DEPLOYPATH/site.webmanifest
+    - /bin/cp -f public/favicon.svg $DEPLOYPATH/favicon.svg
+    - /bin/cp -f public/favicon.ico $DEPLOYPATH/favicon.ico
+    - /bin/cp -f public/apple-touch-icon.png $DEPLOYPATH/apple-touch-icon.png
+    - /bin/cp -f public/logo.svg $DEPLOYPATH/logo.svg
+    - /bin/cp -f public/og-banner.png $DEPLOYPATH/og-banner.png
+    - /bin/cp -f public/og-banner.svg $DEPLOYPATH/og-banner.svg
     - /bin/cp -f public/google782575ecc6870ba1.html $DEPLOYPATH/google782575ecc6870ba1.html
     - /bin/cp -f public/api-blogs.php $DEPLOYPATH/api-blogs.php
     - /bin/cp -Rf src $DEPLOYPATH/

@@ -352,7 +352,7 @@ Provide a JSON response with the following schema:
 
         const response = (await Promise.race([
           aiClient.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
               responseMimeType: 'application/json',
@@ -462,7 +462,7 @@ Keep the answer under 120 words, structured with 2-3 bullet points if helpful.`;
 
         const response = (await Promise.race([
           aiClient.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
           }),
           timeoutPromise,
@@ -633,7 +633,7 @@ app.post(['/api/blogs', '/api-blogs.php'], apiRateLimiter, async (req, res) => {
 async function start() {
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   } else {

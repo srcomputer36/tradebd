@@ -186,16 +186,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <a
-            href="#chart"
+            href="/"
             onClick={(e) => {
               e.preventDefault();
               onSelectTab('CHART');
             }}
             className="text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 flex items-center gap-2 group"
           >
-            <span className="w-7 h-7 bg-emerald-500 rounded-md flex items-center justify-center text-slate-950 font-black text-xs shadow-xs group-hover:bg-emerald-400 transition-colors">
-              TB
-            </span>
+            <img
+              src="/logo.svg"
+              alt="Tradebd – Trading Academy & Technical Analysis Platform Logo"
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-md shadow-xs shrink-0"
+            />
             <span className="tracking-tight text-slate-100">{t('appName')}</span>
           </a>
 
@@ -362,9 +366,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Top Brand & Close Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm shadow-xs">
-              TB
-            </span>
+            <img
+              src="/logo.svg"
+              alt="Tradebd Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-lg shadow-xs shrink-0"
+            />
             <div>
               <div className="text-sm font-extrabold text-white tracking-tight">
                 {t('appName')}

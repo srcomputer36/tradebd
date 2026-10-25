@@ -200,8 +200,8 @@ export default function App() {
       ? 'Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম'
       : 'Tradebd – Trading Academy & Technical Analysis Platform';
     let description = isBn
-      ? 'Tradebd – প্রফেশনাল আন্তর্জাতিক ও বাংলা ফরেক্স ও ক্রিপ্টো ট্রেডিং লার্নিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম।'
-      : 'Tradebd – Professional Forex & Crypto Trading Academy, Live Technical Chart Analysis, Economic Calendar (BST UTC+6), and Risk-Free Virtual Paper Trading Simulator.';
+      ? 'Tradebd – ফ্রি ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি, লাইভ টেকনিক্যাল চার্ট অ্যানালাইসিস, অর্থনৈতিক ক্যালেন্ডার ও ভার্চুয়াল পেপার ট্রেডিং সিমুলেটর।'
+      : 'Tradebd is a free Forex & Crypto Trading Academy, live technical analysis chart platform, economic calendar, and virtual paper trading simulator.';
 
     if (activeTab === 'SIMULATOR') {
       slug = '/simulator';
@@ -1058,8 +1058,8 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col">
         <h1 className="sr-only">
           {language === 'bn'
-            ? 'Tradebd – ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি এবং টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম'
-            : 'Tradebd – Forex & Crypto Trading Academy and Technical Analysis Platform'}
+            ? 'Tradebd – ট্রেডিং একাডেমি ও টেকনিক্যাল অ্যানালাইসিস প্ল্যাটফর্ম'
+            : 'Tradebd – Trading Academy & Technical Analysis Platform'}
         </h1>
         {/* TAB 1: CHART ANALYSIS & QUICK TRADE WORKSPACE */}
         {activeTab === 'CHART' && (
@@ -1097,9 +1097,9 @@ export default function App() {
                 {/* Fast Order Execution Mini Panel */}
                 <div className="bg-[#0b0f19] border border-slate-800 rounded-lg p-4 space-y-3.5">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    <h2 className="text-xs font-bold text-white uppercase tracking-wider">
                       {t('quickTradeTitle')}
-                    </span>
+                    </h2>
                     <span className="text-xs text-slate-400 font-mono">
                       {t('balanceLabel')}: ${balance.toFixed(0)}
                     </span>
@@ -1193,10 +1193,10 @@ export default function App() {
                 {/* Technical Analysis Checklist for Beginners */}
                 <div className="bg-[#0b0f19] border border-slate-800 rounded-lg p-4 space-y-3 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <h2 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
                       <span>{t('checklistTitle')}</span>
-                    </h3>
+                    </h2>
                     <ul className="space-y-2 text-xs text-slate-300">
                       <li className="flex items-start gap-2">
                         <span className="text-emerald-400 font-bold shrink-0">1.</span>
@@ -1231,12 +1231,12 @@ export default function App() {
                 {/* Live Trading Session & Next High-Impact Economic News Mini Card */}
                 <div className="bg-[#0b0f19] border border-slate-800 rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-emerald-400" />
                       <span>
                         {language === 'bn' ? 'লাইভ সেশন ও পরবর্তী নিউজ' : 'Live Session & Next News'}
                       </span>
-                    </span>
+                    </h2>
                     <span className="text-[11px] font-mono text-emerald-400 font-semibold">
                       {activeSessionsNow.length > 0
                         ? activeSessionsNow
@@ -1426,17 +1426,21 @@ export default function App() {
             {/* Column 1: Brand & Mission */}
             <div className="md:col-span-5 space-y-2.5">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 bg-emerald-500 rounded-md flex items-center justify-center text-slate-950 font-black text-xs">
-                  TB
-                </span>
-                <span className="text-sm font-extrabold text-white tracking-tight">
+                <img
+                  src="/logo.svg"
+                  alt="Tradebd – Trading Academy & Technical Analysis Platform Logo"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 rounded-md shrink-0"
+                />
+                <h2 className="text-sm font-extrabold text-white tracking-tight">
                   {t('appName')} (tradebd.online)
-                </span>
+                </h2>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed max-w-md">
                 {language === 'bn'
                   ? 'Tradebd হলো একটি সম্পূর্ণ বিনামূল্যে ব্যবহারযোগ্য ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি, টেকনিক্যাল চার্ট অ্যানালাইসিস ও ভার্চুয়াল পেপার ট্রেডিং প্ল্যাটফর্ম। আসল অর্থ ঝুঁকিতে না ফেলে ট্রেডিং দক্ষতা ও রিস্ক ম্যানেজমেন্ট শিখুন।'
-                  : 'Tradebd is a free educational trading academy, interactive technical chart analysis workspace, and virtual paper-trading simulator designed to build disciplined risk management skills.'}
+                  : 'Tradebd is a free Forex & Crypto Trading Academy, interactive technical analysis chart platform, economic calendar, and virtual paper trading simulator designed to build disciplined risk management skills.'}
               </p>
               <div className="text-[11px] text-slate-400 font-mono">
                 Support: support@tradebd.online · Dhaka, Bangladesh (BST UTC+6)
@@ -1445,9 +1449,9 @@ export default function App() {
 
             {/* Column 2: Platform Tools (Semantic crawlable anchor links for Googlebot Sitelinks) */}
             <div className="md:col-span-4 space-y-2">
-              <div className="text-white font-bold uppercase tracking-wider text-[11px]">
+              <h2 className="text-white font-bold uppercase tracking-wider text-[11px]">
                 {language === 'bn' ? 'প্ল্যাটফর্ম ফিচারসমূহ' : 'Platform Features'}
-              </div>
+              </h2>
               <div className="grid grid-cols-2 gap-1.5 text-xs">
                 <a
                   href="/"
@@ -1531,9 +1535,9 @@ export default function App() {
 
             {/* Column 3: Legal, Privacy & AdSense Compliance Links */}
             <div className="md:col-span-3 space-y-2">
-              <div className="text-white font-bold uppercase tracking-wider text-[11px]">
+              <h2 className="text-white font-bold uppercase tracking-wider text-[11px]">
                 {language === 'bn' ? 'আইনি ও নীতিমালা (Legal)' : 'Legal & Compliance'}
-              </div>
+              </h2>
               <div className="flex flex-col gap-1.5 text-xs">
                 <a
                   href="/about"
@@ -1589,15 +1593,94 @@ export default function App() {
             </div>
           </div>
 
+          {/* External Financial Literacy Resources & Social Sharing Row */}
+          <div className="pt-4 border-t border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[11px] text-slate-400">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="font-semibold text-slate-300">
+                {language === 'bn' ? 'আন্তর্জাতিক শিক্ষা রেফারেন্স:' : 'Market Education References:'}
+              </span>
+              <a
+                href="https://www.investopedia.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                Investopedia
+              </a>
+              <a
+                href="https://www.babypips.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                BabyPips Forex
+              </a>
+              <a
+                href="https://www.tradingview.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                TradingView Charts
+              </a>
+              <a
+                href="https://www.bis.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                BIS Central Bank Data
+              </a>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="font-semibold text-slate-300">
+                {language === 'bn' ? 'শেয়ার করুন:' : 'Share Tradebd:'}
+              </span>
+              <a
+                href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ftradebd.online%2F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                Facebook
+              </a>
+              <a
+                href="https://twitter.com/intent/tweet?url=https%3A%2F%2Ftradebd.online%2F&text=Tradebd%20%E2%80%93%20Trading%20Academy%20%26%20Technical%20Analysis%20Platform"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                X (Twitter)
+              </a>
+              <a
+                href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ftradebd.online%2F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                LinkedIn
+              </a>
+              <a
+                href="https://t.me/share/url?url=https%3A%2F%2Ftradebd.online%2F&text=Tradebd%20Trading%20Academy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                Telegram
+              </a>
+            </div>
+          </div>
+
           {/* YMYL Financial Educational Disclaimer & Copyright */}
-          <div className="pt-5 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400 leading-relaxed">
+          <div className="pt-4 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400 leading-relaxed">
             <p>
               <strong className="text-slate-300">
                 {language === 'bn' ? 'আর্থিক ঝুঁকি ডিসক্লেইমার: ' : 'Educational & Risk Disclaimer: '}
               </strong>
               {language === 'bn'
                 ? 'Tradebd (tradebd.online) শুধুমাত্র একটি শিক্ষামূলক প্ল্যাটফর্ম এবং ভার্চুয়াল ট্রেডিং সিমুলেটর। এখানে প্রদত্ত যেকোনো কাস্টম ডেমো ব্যালেন্স সম্পূর্ণ কাল্পনিক এবং এই ওয়েবসাইটের কোনো তথ্য বা বিশ্লেষণ সরাসরি বিনিয়োগ পরামর্শ (Financial Advice) নয়। ফরেক্স ও ক্রিপ্টোকারেন্সি মার্কেটে বাস্তব অর্থ বিনিয়োগের পূর্বে নিজ দায়িত্বে ঝুঁকি যাচাই করুন।'
-                : 'Tradebd (tradebd.online) is strictly an educational platform and virtual paper-trading simulator. All customizable demo balances are virtual with no monetary value. Content provided on this site does not constitute financial or investment advice.'}
+                : 'Tradebd (tradebd.online) is strictly an educational trading academy, technical analysis platform, and virtual paper-trading simulator. All customizable demo balances are virtual with no monetary value. Content provided on this site does not constitute financial or investment advice.'}
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-slate-400">
               <span>
@@ -1606,7 +1689,7 @@ export default function App() {
               <span>
                 {language === 'bn'
                   ? '১০০% বিনামূল্যে ফিন্যান্সিয়াল এডুকেশন ও পেপার ট্রেডিং প্ল্যাটফর্ম'
-                  : '100% Free Financial Education & Virtual Paper Trading Workspace'}
+                  : '100% Free Financial Education & Virtual Paper Trading Platform'}
               </span>
             </div>
           </div>

@@ -1,0 +1,22 @@
+{
+  "name": "Tradebd – Trading Academy & Technical Analysis Platform",
+  "short_name": "Tradebd",
+  "description": "Tradebd is a free Forex & Crypto Trading Academy, live technical analysis chart platform, economic calendar, and virtual paper trading simulator.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

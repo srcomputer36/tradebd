@@ -1,6 +1,6 @@
 {
   "name": "TradeBangla - ট্রেডিং একাডেমি ও অ্যানালাইসিস প্ল্যাটফর্ম",
-  "description": "Tradebd – Professional Forex & Crypto Trading Academy, Live Technical Chart Analysis, Economic Calendar (BST UTC+6), and Risk-Free Virtual Paper Trading Simulator.",
+  "description": "Tradebd is a free Forex & Crypto Trading Academy, live technical analysis chart platform, economic calendar, and virtual paper trading simulator.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
