@@ -25,6 +25,9 @@ AddType image/x-icon .ico
   # Block direct access to internal blog storage & admin password hash files
   RewriteRule ^(\.tradebd-admin-hash\.php|blogs-data\.json)$ - [F,L]
 
+  # Serve .well-known/ai-catalog.json from root ai-catalog.json if .well-known folder is not present
+  RewriteRule ^\.well-known/ai-catalog\.json$ /ai-catalog.json [L]
+
   # Do not rewrite existing SEO, icon, manifest, or API files
   RewriteRule ^index\.html$ - [L]
   RewriteRule ^sitemap\.xml$ - [L]
@@ -38,6 +41,7 @@ AddType image/x-icon .ico
   RewriteRule ^og-banner\.(png|svg)$ - [L]
   RewriteRule ^api-blogs\.php$ - [L]
   RewriteRule ^google[a-z0-9]+\.html$ - [L]
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
   RewriteCond %{REQUEST_URI} !^/api/
   RewriteCond %{REQUEST_URI} !^/assets/
   RewriteCond %{REQUEST_URI} !^/src/
@@ -71,5 +75,8 @@ AddType image/x-icon .ico
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   <FilesMatch "\.(html|htm)$">
     Header set Content-Type "text/html; charset=UTF-8"
+  </FilesMatch>
+  <FilesMatch "^(llms\.txt|ai-catalog\.json)$">
+    Header set Access-Control-Allow-Origin "*"
   </FilesMatch>
 </IfModule>

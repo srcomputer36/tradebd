@@ -504,51 +504,72 @@ export default function App() {
 
   // Counter to produce new candle every ~12 ticks
   const tickCounterRef = useRef(0);
+  const [tickEngineReady, setTickEngineReady] = useState<boolean>(false);
+
+  // Start background live price ticking immediately on user interaction or after initial 6.5s quiet window
+  useEffect(() => {
+    let activated = false;
+    const activate = () => {
+      if (activated) return;
+      activated = true;
+      setTickEngineReady(true);
+    };
+    const events = ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const;
+    events.forEach((evt) => window.addEventListener(evt, activate, { once: true, passive: true }));
+    const timer = setTimeout(activate, 6500);
+    return () => {
+      clearTimeout(timer);
+      events.forEach((evt) => window.removeEventListener(evt, activate));
+    };
+  }, []);
+
+  const candlesRef = useRef<Candle[]>(candles);
+  useEffect(() => {
+    candlesRef.current = candles;
+  }, [candles]);
 
   // Live price tick simulation loop for both selected chart candles & all background assets
   useEffect(() => {
-    if (!isLiveTicking) return;
+    if (!isLiveTicking || !tickEngineReady) return;
 
     const intervalMs = Math.max(250, 1200 / tickSpeed);
     const interval = setInterval(() => {
+      const currentCandles = candlesRef.current;
+      if (currentCandles.length === 0) return;
+
       tickCounterRef.current += 1;
       const isNewCandle = tickCounterRef.current >= 12;
       if (isNewCandle) tickCounterRef.current = 0;
 
-      setCandles((prevCandles) => {
-        if (prevCandles.length === 0) return prevCandles;
+      const last = currentCandles[currentCandles.length - 1];
+      const { updatedCandle, newCandle } = simulateTick(last, selectedAsset, isNewCandle);
+      const latestClose = newCandle ? newCandle.close : updatedCandle.close;
 
-        const last = prevCandles[prevCandles.length - 1];
-        const { updatedCandle, newCandle } = simulateTick(last, selectedAsset, isNewCandle);
-        const latestClose = newCandle ? newCandle.close : updatedCandle.close;
+      const nextCandles = newCandle
+        ? [...currentCandles.slice(-499), newCandle]
+        : [...currentCandles.slice(0, -1), updatedCandle];
 
-        // Update live prices for all assets (selectedAsset uses exact candle close)
-        setAssetPrices((prevPrices) => {
-          const nextPrices: Record<string, number> = {
-            ...prevPrices,
-            [selectedAsset.id]: latestClose,
-          };
-          for (const a of TRADING_ASSETS) {
-            if (a.id === selectedAsset.id) continue;
-            const prevP = prevPrices[a.id] ?? a.basePrice;
-            const vol = a.category === 'forex' ? 0.0003 : 0.0015;
-            const deltaPct = (Math.random() - 0.495) * vol;
-            nextPrices[a.id] = Number((prevP * (1 + deltaPct)).toFixed(a.precision));
-          }
-          return nextPrices;
-        });
+      candlesRef.current = nextCandles;
+      setCandles(nextCandles);
 
-        if (newCandle) {
-          // Keep 500 candles so users can pan far back in history and EMA 200 has full data
-          return [...prevCandles.slice(-499), newCandle];
-        } else {
-          return [...prevCandles.slice(0, -1), updatedCandle];
+      setAssetPrices((prevPrices) => {
+        const nextPrices: Record<string, number> = {
+          ...prevPrices,
+          [selectedAsset.id]: latestClose,
+        };
+        for (const a of TRADING_ASSETS) {
+          if (a.id === selectedAsset.id) continue;
+          const prevP = prevPrices[a.id] ?? a.basePrice;
+          const vol = a.category === 'forex' ? 0.0003 : 0.0015;
+          const deltaPct = (Math.random() - 0.495) * vol;
+          nextPrices[a.id] = Number((prevP * (1 + deltaPct)).toFixed(a.precision));
         }
+        return nextPrices;
       });
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [isLiveTicking, tickSpeed, selectedAsset]);
+  }, [isLiveTicking, tickEngineReady, tickSpeed, selectedAsset]);
 
   // Evaluate open positions across ALL assets on live price ticks (check SL/TP/Liquidation & PnL)
   useEffect(() => {
@@ -1145,7 +1166,7 @@ export default function App() {
                           ),
                         });
                       }}
-                      className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                      className="min-h-[38px] py-2.5 px-3 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <TrendingUp className="w-3.5 h-3.5" />
                       <span>{t('quickBuyLong')}</span>
@@ -1169,14 +1190,14 @@ export default function App() {
                           ),
                         });
                       }}
-                      className="py-2.5 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                      className="min-h-[38px] py-2.5 px-3 bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <TrendingDown className="w-3.5 h-3.5" />
                       <span>{t('quickSellShort')}</span>
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-slate-400 text-center">
+                  <p className="text-[11px] text-slate-300 text-center">
                     {language === 'bn'
                       ? `* কুইক ট্রেডে $${quickTradeMargin} মার্জিন (5x লিভারেজ) ও অটো ১:২ স্টপ-লস/টেক-প্রফিট সেট হয়।`
                       : `* Quick trade uses $${quickTradeMargin} margin (5x leverage) with automatic 1:2 SL/TP.`}
@@ -1184,7 +1205,7 @@ export default function App() {
 
                   <button
                     onClick={() => handleSelectTab('SIMULATOR')}
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-semibold text-cyan-400 transition-colors cursor-pointer"
+                    className="min-h-[36px] w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-semibold text-cyan-300 transition-colors cursor-pointer"
                   >
                     {t('customOrderBtn')}
                   </button>
@@ -1218,10 +1239,10 @@ export default function App() {
                   </div>
 
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                    <span className="text-slate-400">{t('wantToLearn')}</span>
+                    <span className="text-slate-300">{t('wantToLearn')}</span>
                     <button
                       onClick={() => handleSelectTab('ACADEMY')}
-                      className="text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
+                      className="min-h-[30px] px-2 py-1 text-cyan-300 hover:text-cyan-200 font-semibold cursor-pointer"
                     >
                       {t('viewAcademyCourse')}
                     </button>
@@ -1237,7 +1258,7 @@ export default function App() {
                         {language === 'bn' ? 'লাইভ সেশন ও পরবর্তী নিউজ' : 'Live Session & Next News'}
                       </span>
                     </h2>
-                    <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                    <span className="text-[11px] font-mono text-emerald-300 font-semibold">
                       {activeSessionsNow.length > 0
                         ? activeSessionsNow
                             .map((s) =>
@@ -1251,7 +1272,7 @@ export default function App() {
                   {nextHighImpactEvent && (
                     <div className="bg-slate-900/90 border border-slate-800/80 rounded-lg p-2.5 text-xs space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-rose-400 font-bold flex items-center gap-1">
+                        <span className="text-rose-300 font-bold flex items-center gap-1">
                           <Flame className="w-3 h-3" />
                           <span>
                             {language === 'bn' ? 'হাই-ইমপ্যাক্ট নিউজ' : 'High-Impact Release'}
@@ -1267,13 +1288,13 @@ export default function App() {
                           ? nextHighImpactEvent.titleBn
                           : nextHighImpactEvent.titleEn}
                       </div>
-                      <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                      <div className="text-[11px] text-slate-300 flex items-center justify-between">
                         <span>
                           {language === 'bn' ? 'পূর্ববর্তী:' : 'Prev:'} {nextHighImpactEvent.previous}
                         </span>
                         <span>
                           {language === 'bn' ? 'পূর্বাভাস:' : 'Forecast:'}{' '}
-                          <strong className="text-slate-200">{nextHighImpactEvent.forecast}</strong>
+                          <strong className="text-slate-100">{nextHighImpactEvent.forecast}</strong>
                         </span>
                       </div>
                     </div>
@@ -1281,7 +1302,7 @@ export default function App() {
 
                   <button
                     onClick={() => handleSelectTab('CALENDAR')}
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-semibold text-cyan-400 transition-colors cursor-pointer"
+                    className="min-h-[36px] w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-semibold text-cyan-300 transition-colors cursor-pointer"
                   >
                     {language === 'bn'
                       ? 'অর্থনৈতিক ক্যালেন্ডার, সেশন ও নিউজ দেখুন →'
@@ -1452,7 +1473,7 @@ export default function App() {
               <h2 className="text-white font-bold uppercase tracking-wider text-[11px]">
                 {language === 'bn' ? 'প্ল্যাটফর্ম ফিচারসমূহ' : 'Platform Features'}
               </h2>
-              <div className="grid grid-cols-2 gap-1.5 text-xs">
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
                 <a
                   href="/"
                   onClick={(e) => {
@@ -1460,7 +1481,7 @@ export default function App() {
                     handleSelectTab('CHART');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'লাইভ চার্ট অ্যানালাইসিস' : 'Live Chart Analysis'}
                 </a>
@@ -1471,7 +1492,7 @@ export default function App() {
                     handleSelectTab('SIMULATOR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'পেপার ট্রেডিং সিমুলেটর' : 'Paper Trading Simulator'}
                 </a>
@@ -1482,7 +1503,7 @@ export default function App() {
                     handleSelectTab('CALENDAR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'অর্থনৈতিক ক্যালেন্ডার ও সেশন' : 'Economic Calendar & Sessions'}
                 </a>
@@ -1493,7 +1514,7 @@ export default function App() {
                     handleSelectTab('ACADEMY');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'ট্রেডিং একাডেমি কোর্স' : 'Trading Academy Course'}
                 </a>
@@ -1504,7 +1525,7 @@ export default function App() {
                     handleSelectTab('PATTERNS');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'ক্যান্ডেলস্টিক প্যাটার্ন' : 'Candlestick Patterns'}
                 </a>
@@ -1515,7 +1536,7 @@ export default function App() {
                     handleSelectTab('CALCULATOR');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? 'রিস্ক ও লট ক্যালকুলেটর' : 'Risk & Lot Calculator'}
                 </a>
@@ -1526,7 +1547,7 @@ export default function App() {
                     handleSelectTab('BLOG');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-left text-emerald-400 hover:text-emerald-300 font-semibold transition-colors cursor-pointer"
+                  className="min-h-[28px] py-1 inline-flex items-center text-left text-emerald-300 hover:text-emerald-200 font-semibold transition-colors cursor-pointer"
                 >
                   {language === 'bn' ? '✍️ শিক্ষণীয় ব্লগ ও আর্টিকেল' : '✍️ Trading Blog & Articles'}
                 </a>
@@ -1538,14 +1559,14 @@ export default function App() {
               <h2 className="text-white font-bold uppercase tracking-wider text-[11px]">
                 {language === 'bn' ? 'আইনি ও নীতিমালা (Legal)' : 'Legal & Compliance'}
               </h2>
-              <div className="flex flex-col gap-1.5 text-xs">
+              <div className="flex flex-col gap-1.5 text-xs text-slate-300">
                 <a
                   href="/about"
                   onClick={(e) => {
                     e.preventDefault();
                     openLegalPage('ABOUT');
                   }}
-                  className="hover:text-cyan-400 transition-colors"
+                  className="min-h-[28px] py-1 inline-flex items-center hover:text-cyan-300 transition-colors"
                 >
                   {language === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About Us'}
                 </a>
@@ -1555,7 +1576,7 @@ export default function App() {
                     e.preventDefault();
                     openLegalPage('PRIVACY');
                   }}
-                  className="hover:text-cyan-400 transition-colors"
+                  className="min-h-[28px] py-1 inline-flex items-center hover:text-cyan-300 transition-colors"
                 >
                   {language === 'bn' ? 'গোপনীয়তা নীতি (Privacy Policy)' : 'Privacy Policy'}
                 </a>
@@ -1565,7 +1586,7 @@ export default function App() {
                     e.preventDefault();
                     openLegalPage('TERMS');
                   }}
-                  className="hover:text-cyan-400 transition-colors"
+                  className="min-h-[28px] py-1 inline-flex items-center hover:text-cyan-300 transition-colors"
                 >
                   {language === 'bn' ? 'ব্যবহারের শর্তাবলী (Terms of Use)' : 'Terms & Conditions'}
                 </a>
@@ -1575,7 +1596,7 @@ export default function App() {
                     e.preventDefault();
                     openLegalPage('DISCLAIMER');
                   }}
-                  className="hover:text-cyan-400 transition-colors"
+                  className="min-h-[28px] py-1 inline-flex items-center hover:text-cyan-300 transition-colors"
                 >
                   {language === 'bn' ? 'ঝুঁকি সতর্কবার্তা (Risk Disclaimer)' : 'Financial Risk Disclaimer'}
                 </a>
@@ -1585,7 +1606,7 @@ export default function App() {
                     e.preventDefault();
                     openLegalPage('CONTACT');
                   }}
-                  className="hover:text-cyan-400 transition-colors"
+                  className="min-h-[28px] py-1 inline-flex items-center hover:text-cyan-300 transition-colors"
                 >
                   {language === 'bn' ? 'যোগাযোগ করুন (Contact Us)' : 'Contact Us'}
                 </a>
@@ -1594,16 +1615,16 @@ export default function App() {
           </div>
 
           {/* External Financial Literacy Resources & Social Sharing Row */}
-          <div className="pt-4 border-t border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[11px] text-slate-400">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="font-semibold text-slate-300">
+          <div className="pt-4 border-t border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-slate-300">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="font-semibold text-slate-200">
                 {language === 'bn' ? 'আন্তর্জাতিক শিক্ষা রেফারেন্স:' : 'Market Education References:'}
               </span>
               <a
                 href="https://www.investopedia.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 Investopedia
               </a>
@@ -1611,7 +1632,7 @@ export default function App() {
                 href="https://www.babypips.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 BabyPips Forex
               </a>
@@ -1619,7 +1640,7 @@ export default function App() {
                 href="https://www.tradingview.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 TradingView Charts
               </a>
@@ -1627,21 +1648,21 @@ export default function App() {
                 href="https://www.bis.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 BIS Central Bank Data
               </a>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="font-semibold text-slate-300">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="font-semibold text-slate-200">
                 {language === 'bn' ? 'শেয়ার করুন:' : 'Share Tradebd:'}
               </span>
               <a
                 href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ftradebd.online%2F"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 Facebook
               </a>
@@ -1649,7 +1670,7 @@ export default function App() {
                 href="https://twitter.com/intent/tweet?url=https%3A%2F%2Ftradebd.online%2F&text=Tradebd%20%E2%80%93%20Trading%20Academy%20%26%20Technical%20Analysis%20Platform"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 X (Twitter)
               </a>
@@ -1657,7 +1678,7 @@ export default function App() {
                 href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ftradebd.online%2F"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 LinkedIn
               </a>
@@ -1665,7 +1686,7 @@ export default function App() {
                 href="https://t.me/share/url?url=https%3A%2F%2Ftradebd.online%2F&text=Tradebd%20Trading%20Academy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-cyan-400 transition-colors"
+                className="min-h-[28px] py-1 px-1 inline-flex items-center hover:text-cyan-300 transition-colors"
               >
                 Telegram
               </a>
@@ -1673,16 +1694,16 @@ export default function App() {
           </div>
 
           {/* YMYL Financial Educational Disclaimer & Copyright */}
-          <div className="pt-4 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400 leading-relaxed">
+          <div className="pt-4 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-300 leading-relaxed">
             <p>
-              <strong className="text-slate-300">
+              <strong className="text-slate-100">
                 {language === 'bn' ? 'আর্থিক ঝুঁকি ডিসক্লেইমার: ' : 'Educational & Risk Disclaimer: '}
               </strong>
               {language === 'bn'
                 ? 'Tradebd (tradebd.online) শুধুমাত্র একটি শিক্ষামূলক প্ল্যাটফর্ম এবং ভার্চুয়াল ট্রেডিং সিমুলেটর। এখানে প্রদত্ত যেকোনো কাস্টম ডেমো ব্যালেন্স সম্পূর্ণ কাল্পনিক এবং এই ওয়েবসাইটের কোনো তথ্য বা বিশ্লেষণ সরাসরি বিনিয়োগ পরামর্শ (Financial Advice) নয়। ফরেক্স ও ক্রিপ্টোকারেন্সি মার্কেটে বাস্তব অর্থ বিনিয়োগের পূর্বে নিজ দায়িত্বে ঝুঁকি যাচাই করুন।'
                 : 'Tradebd (tradebd.online) is strictly an educational trading academy, technical analysis platform, and virtual paper-trading simulator. All customizable demo balances are virtual with no monetary value. Content provided on this site does not constitute financial or investment advice.'}
             </p>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-slate-400">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-slate-300">
               <span>
                 © {new Date().getFullYear()} Tradebd (tradebd.online). All rights reserved.
               </span>
@@ -1698,21 +1719,21 @@ export default function App() {
 
       {/* Cookie Consent Banner (GDPR & Google AdSense Compliance) */}
       {!cookieConsentAccepted && (
-        <div className="fixed bottom-14 md:bottom-4 left-3 right-3 md:left-auto md:right-5 md:max-w-lg bg-[#0f172a] border border-slate-700 rounded-xl p-4 shadow-2xl z-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="text-xs text-slate-300 leading-relaxed">
+        <div className="fixed bottom-16 md:bottom-4 left-3 right-3 md:left-auto md:right-5 md:max-w-lg bg-[#0f172a] border border-slate-700 rounded-xl p-4 shadow-2xl z-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="text-xs text-slate-200 leading-relaxed">
             {language === 'bn'
               ? 'আপনার ব্রাউজিং অভিজ্ঞতা উন্নত করতে, ডেমো ট্রেডিং ডাটা সংরক্ষণ করতে এবং প্রাসঙ্গিক বিজ্ঞাপন (Google AdSense) প্রদর্শনের জন্য আমরা কুকিজ ব্যবহার করি।'
               : 'We use cookies and local storage to save your virtual trading progress and serve relevant educational content and advertisements.'}{' '}
             <button
               onClick={() => openLegalPage('PRIVACY')}
-              className="text-cyan-400 hover:underline font-semibold cursor-pointer"
+              className="min-h-[28px] px-1.5 py-0.5 text-cyan-300 hover:underline font-semibold cursor-pointer inline-flex items-center"
             >
               {language === 'bn' ? 'গোপনীয়তা নীতি দেখুন' : 'Privacy Policy'}
             </button>
           </div>
           <button
             onClick={handleAcceptCookies}
-            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg shrink-0 transition-colors cursor-pointer"
+            className="min-h-[36px] px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-xs rounded-lg shrink-0 transition-colors cursor-pointer"
           >
             {language === 'bn' ? 'সম্মতি দিন (Accept)' : 'Accept Cookies'}
           </button>
@@ -1720,11 +1741,11 @@ export default function App() {
       )}
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-2 px-1 shrink-0 z-40 overflow-x-auto">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-1.5 px-1 shrink-0 z-40 overflow-x-auto">
         <button
           onClick={() => handleSelectTab('CHART')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'CHART' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'CHART' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
@@ -1733,21 +1754,21 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('SIMULATOR')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 relative shrink-0 ${
-            activeTab === 'SIMULATOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 relative shrink-0 ${
+            activeTab === 'SIMULATOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <TrendingUp className="w-4 h-4" />
           <span>{t('navSimulatorShort')}</span>
           {positions.length > 0 && (
-            <span className="absolute top-0 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-400 rounded-full" />
           )}
         </button>
 
         <button
           onClick={() => handleSelectTab('CALENDAR')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'CALENDAR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'CALENDAR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -1756,8 +1777,8 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('ACADEMY')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'ACADEMY' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'ACADEMY' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -1766,8 +1787,8 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('BLOG')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'BLOG' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'BLOG' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <PenTool className="w-4 h-4" />
@@ -1776,8 +1797,8 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('PATTERNS')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'PATTERNS' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'PATTERNS' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -1786,8 +1807,8 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('CALCULATOR')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'CALCULATOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'CALCULATOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Calculator className="w-4 h-4" />
@@ -1796,8 +1817,8 @@ export default function App() {
 
         <button
           onClick={() => handleSelectTab('MENTOR')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-medium p-1 shrink-0 ${
-            activeTab === 'MENTOR' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
+            activeTab === 'MENTOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BrainCircuit className="w-4 h-4" />

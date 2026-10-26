@@ -1,17 +1,58 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JPKV5KJD8X"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
+      document.documentElement.classList.add('js-ready');
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-JPKV5KJD8X');
+      (function() {
+        var gtagLoaded = false;
+        function loadGtag() {
+          if (gtagLoaded) return;
+          gtagLoaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-JPKV5KJD8X';
+          document.head.appendChild(s);
+        }
+        var events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+        events.forEach(function(evt) {
+          window.addEventListener(evt, loadGtag, { once: true, passive: true });
+        });
+        window.addEventListener('load', function() {
+          setTimeout(loadGtag, 5500);
+        }, { once: true });
+      })();
     </script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html, body {
+        background-color: #070b12;
+        color: #f1f5f9;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .js-ready #seo-prerender {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
     <script>
       (function() {
         try {
@@ -204,108 +245,111 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional" media="print" onload="this.media='all'" />
     <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional" />
     </noscript>
   </head>
-  <body class="bg-[#0b0f19] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200" style="background-color: #0b0f19; color: #f1f5f9; margin: 0;">
+  <body class="bg-[#070b12] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
     <div id="root">
-      <header style="max-width: 1200px; margin: 0 auto; padding: 16px 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <img src="/logo.svg" alt="Tradebd – Trading Academy and Technical Analysis Platform Logo" width="36" height="36" />
-          <span style="font-size: 18px; font-weight: 800; color: #ffffff;">Tradebd</span>
-        </div>
-        <nav aria-label="Primary Navigation" style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px;">
-          <a href="https://tradebd.online/" style="color: #38bdf8; text-decoration: none;">Live Chart Analysis</a>
-          <a href="https://tradebd.online/simulator" style="color: #cbd5e1; text-decoration: none;">Paper Trading Simulator</a>
-          <a href="https://tradebd.online/calendar" style="color: #cbd5e1; text-decoration: none;">Forex Economic Calendar</a>
-          <a href="https://tradebd.online/academy" style="color: #cbd5e1; text-decoration: none;">Trading Academy Course</a>
-          <a href="https://tradebd.online/blog" style="color: #10b981; text-decoration: none;">Educational Trading Blog</a>
-          <a href="https://tradebd.online/patterns" style="color: #cbd5e1; text-decoration: none;">Candlestick Patterns</a>
-          <a href="https://tradebd.online/calculator" style="color: #cbd5e1; text-decoration: none;">Risk &amp; Lot Calculator</a>
-        </nav>
-      </header>
+      <div id="seo-prerender">
+        <header style="max-width: 1200px; margin: 0 auto; padding: 16px 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="/logo.svg" alt="Tradebd – Trading Academy and Technical Analysis Platform Logo" width="36" height="36" />
+            <span style="font-size: 18px; font-weight: 800; color: #ffffff;">Tradebd</span>
+          </div>
+          <nav aria-label="Primary Navigation" style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px;">
+            <a href="https://tradebd.online/" style="color: #38bdf8; text-decoration: none;">Live Chart Analysis</a>
+            <a href="https://tradebd.online/simulator" style="color: #cbd5e1; text-decoration: none;">Paper Trading Simulator</a>
+            <a href="https://tradebd.online/calendar" style="color: #cbd5e1; text-decoration: none;">Forex Economic Calendar</a>
+            <a href="https://tradebd.online/academy" style="color: #cbd5e1; text-decoration: none;">Trading Academy Course</a>
+            <a href="https://tradebd.online/blog" style="color: #10b981; text-decoration: none;">Educational Trading Blog</a>
+            <a href="https://tradebd.online/patterns" style="color: #cbd5e1; text-decoration: none;">Candlestick Patterns</a>
+            <a href="https://tradebd.online/calculator" style="color: #cbd5e1; text-decoration: none;">Risk &amp; Lot Calculator</a>
+          </nav>
+        </header>
 
-      <main style="max-width: 1200px; margin: 0 auto; padding: 28px 20px; line-height: 1.7; color: #cbd5e1;">
-        <article>
-          <h1 style="font-size: 28px; font-weight: 800; color: #ffffff; margin: 0 0 14px 0;">
-            Tradebd – Trading Academy &amp; Technical Analysis Platform
-          </h1>
-          <p>
-            Welcome to <strong>Tradebd Trading Academy</strong> (tradebd.online), a comprehensive and 100% free Forex and Crypto financial education hub, interactive candlestick <strong>technical analysis platform</strong>, real-time economic calendar, and risk-free <strong>virtual paper trading simulator</strong>. Whether you are a beginner learning how financial markets operate or an experienced analyst testing institutional price action strategies, Tradebd provides professional charting tools and structured courses in English, Bengali, and 17 global languages.
+        <main style="max-width: 1200px; margin: 0 auto; padding: 28px 20px; line-height: 1.7; color: #cbd5e1;">
+          <article>
+            <h1 style="font-size: 28px; font-weight: 800; color: #ffffff; margin: 0 0 14px 0;">
+              Tradebd – Trading Academy &amp; Technical Analysis Platform
+            </h1>
+            <p>
+              Welcome to <strong>Tradebd Trading Academy</strong> (tradebd.online), a comprehensive and 100% free Forex and Crypto financial education hub, interactive candlestick <strong>technical analysis platform</strong>, real-time economic calendar, and risk-free <strong>virtual paper trading simulator</strong>. Whether you are a beginner learning how financial markets operate or an experienced analyst testing institutional price action strategies, Tradebd provides professional charting tools and structured courses in English, Bengali, and 17 global languages.
+            </p>
+            <p>
+              Our mission at Tradebd is to help new and intermediate traders master disciplined risk management, chart reading, and macroeconomic fundamentals before ever risking real capital. On our interactive platform, you can analyze major Forex currency pairs (EUR/USD, GBP/USD, USD/JPY, AUD/USD, XAU/USD Gold) alongside leading cryptocurrency pairs (BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT) with zero registration barriers.
+            </p>
+
+            <figure style="margin: 24px 0; text-align: center;">
+              <img
+                src="/og-banner.png"
+                alt="Tradebd Trading Academy and Candlestick Technical Analysis Platform Workspace"
+                width="600"
+                height="315"
+                loading="lazy"
+                decoding="async"
+                style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #1e293b;"
+              />
+            </figure>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
+              Interactive Candlestick Chart &amp; Technical Analysis Platform
+            </h2>
+            <p>
+              The Tradebd technical analysis platform features multi-timeframe candlestick charts (1m, 5m, 15m, 1H, 4H, 1D) equipped with institutional indicators including Exponential Moving Averages (EMA 20, EMA 50, EMA 200), Simple Moving Averages (SMA), Bollinger Bands, Relative Strength Index (RSI 14), and volume histograms. Traders can inspect support and resistance zones, trendlines, and price action setups directly in their browser.
+            </p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
+              Risk-Free Virtual Paper Trading Simulator &amp; Custom Demo Account
+            </h2>
+            <p>
+              Practice real-time order execution on the <a href="https://tradebd.online/simulator" style="color: #38bdf8;">Tradebd Virtual Paper Trading Simulator</a> using customizable demo funds ranging from $10 up to $10,000,000. Open Buy/Long and Sell/Short positions with configurable leverage, automated Stop-Loss (SL), and Take-Profit (TP) targets to build a verified trading journal without financial risk.
+            </p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
+              Global Forex Trading Sessions &amp; Economic Calendar (BST UTC+6)
+            </h2>
+            <p>
+              Timing liquidity is essential for technical analysis. Our <a href="https://tradebd.online/calendar" style="color: #38bdf8;">Forex Economic Calendar and Market Sessions Tracker</a> displays live Sydney, Tokyo, London, and New York market hours synchronized with Bangladesh Standard Time (BST UTC+6) and UTC. Track high-impact macroeconomic releases such as US Core CPI inflation, Non-Farm Payrolls (NFP), and FOMC interest rate decisions alongside the high-volatility London–New York session overlap.
+            </p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
+              Trading Academy Curriculum, Candlestick Patterns &amp; Lot Size Calculator
+            </h2>
+            <p>
+              Explore the <a href="https://tradebd.online/academy" style="color: #38bdf8;">Tradebd Trading Academy Course</a> and <a href="https://tradebd.online/blog" style="color: #38bdf8;">Educational Trading Blog</a> to master market structure, supply and demand zones, and institutional psychology. Reference our interactive <a href="https://tradebd.online/patterns" style="color: #38bdf8;">Candlestick Chart Patterns Guide</a> (Hammer, Bullish Engulfing, Doji, Morning Star, Shooting Star) and calculate exact position sizing with our <a href="https://tradebd.online/calculator" style="color: #38bdf8;">Position Size and Lot Risk Calculator</a> and <a href="https://tradebd.online/mentor" style="color: #38bdf8;">Interactive Chart Setup Mentor</a> to enforce the 1%–2% capital protection rule.
+            </p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
+              Global Market References &amp; Financial Literacy Standards
+            </h2>
+            <p>
+              Our curriculum aligns with international financial literacy standards and central bank market structure publications. For supplementary macroeconomic data and technical terminology, learners can also review educational resources from <a href="https://www.investopedia.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Investopedia Financial Dictionary</a>, <a href="https://www.babypips.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">BabyPips Forex Education</a>, <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">TradingView Market Charts</a>, and global central bank foreign exchange surveys from the <a href="https://www.bis.org/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Bank for International Settlements (BIS)</a>.
+            </p>
+          </article>
+        </main>
+
+        <footer style="max-width: 1200px; margin: 0 auto; padding: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #94a3b8;">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px;">
+            <a href="https://tradebd.online/about" style="color: #cbd5e1;">About Tradebd Academy</a>
+            <a href="https://tradebd.online/privacy" style="color: #cbd5e1;">Privacy Policy</a>
+            <a href="https://tradebd.online/terms" style="color: #cbd5e1;">Terms of Use</a>
+            <a href="https://tradebd.online/disclaimer" style="color: #cbd5e1;">Financial Risk Disclaimer</a>
+            <a href="https://tradebd.online/contact" style="color: #cbd5e1;">Contact Support (support@tradebd.online)</a>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px;">
+            <span>Share Tradebd:</span>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ftradebd.online%2F" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on Facebook</a>
+            <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Ftradebd.online%2F&amp;text=Tradebd%20%E2%80%93%20Trading%20Academy%20%26%20Technical%20Analysis%20Platform" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on X (Twitter)</a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ftradebd.online%2F" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on LinkedIn</a>
+            <a href="https://t.me/share/url?url=https%3A%2F%2Ftradebd.online%2F&amp;text=Tradebd%20Trading%20Academy" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on Telegram</a>
+          </div>
+          <p style="margin: 0;">
+            Educational Disclaimer: Tradebd (tradebd.online) is strictly an educational trading academy and virtual paper-trading simulator. Nothing on this site constitutes financial or investment advice.
           </p>
-          <p>
-            Our mission at Tradebd is to help new and intermediate traders master disciplined risk management, chart reading, and macroeconomic fundamentals before ever risking real capital. On our interactive platform, you can analyze major Forex currency pairs (EUR/USD, GBP/USD, USD/JPY, AUD/USD, XAU/USD Gold) alongside leading cryptocurrency pairs (BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT) with zero registration barriers.
-          </p>
-
-          <figure style="margin: 24px 0; text-align: center;">
-            <img
-              src="/og-banner.png"
-              alt="Tradebd Trading Academy and Candlestick Technical Analysis Platform Workspace"
-              width="600"
-              height="315"
-              style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #1e293b;"
-            />
-          </figure>
-
-          <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
-            Interactive Candlestick Chart &amp; Technical Analysis Platform
-          </h2>
-          <p>
-            The Tradebd technical analysis platform features multi-timeframe candlestick charts (1m, 5m, 15m, 1H, 4H, 1D) equipped with institutional indicators including Exponential Moving Averages (EMA 20, EMA 50, EMA 200), Simple Moving Averages (SMA), Bollinger Bands, Relative Strength Index (RSI 14), and volume histograms. Traders can inspect support and resistance zones, trendlines, and price action setups directly in their browser.
-          </p>
-
-          <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
-            Risk-Free Virtual Paper Trading Simulator &amp; Custom Demo Account
-          </h2>
-          <p>
-            Practice real-time order execution on the <a href="https://tradebd.online/simulator" style="color: #38bdf8;">Tradebd Virtual Paper Trading Simulator</a> using customizable demo funds ranging from $10 up to $10,000,000. Open Buy/Long and Sell/Short positions with configurable leverage, automated Stop-Loss (SL), and Take-Profit (TP) targets to build a verified trading journal without financial risk.
-          </p>
-
-          <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
-            Global Forex Trading Sessions &amp; Economic Calendar (BST UTC+6)
-          </h2>
-          <p>
-            Timing liquidity is essential for technical analysis. Our <a href="https://tradebd.online/calendar" style="color: #38bdf8;">Forex Economic Calendar and Market Sessions Tracker</a> displays live Sydney, Tokyo, London, and New York market hours synchronized with Bangladesh Standard Time (BST UTC+6) and UTC. Track high-impact macroeconomic releases such as US Core CPI inflation, Non-Farm Payrolls (NFP), and FOMC interest rate decisions alongside the high-volatility London–New York session overlap.
-          </p>
-
-          <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
-            Trading Academy Curriculum, Candlestick Patterns &amp; Lot Size Calculator
-          </h2>
-          <p>
-            Explore the <a href="https://tradebd.online/academy" style="color: #38bdf8;">Tradebd Trading Academy Course</a> and <a href="https://tradebd.online/blog" style="color: #38bdf8;">Educational Trading Blog</a> to master market structure, supply and demand zones, and institutional psychology. Reference our interactive <a href="https://tradebd.online/patterns" style="color: #38bdf8;">Candlestick Chart Patterns Guide</a> (Hammer, Bullish Engulfing, Doji, Morning Star, Shooting Star) and calculate exact position sizing with our <a href="https://tradebd.online/calculator" style="color: #38bdf8;">Position Size and Lot Risk Calculator</a> and <a href="https://tradebd.online/mentor" style="color: #38bdf8;">Interactive Chart Setup Mentor</a> to enforce the 1%–2% capital protection rule.
-          </p>
-
-          <h2 style="font-size: 20px; font-weight: 700; color: #f8fafc; margin: 24px 0 10px 0;">
-            Global Market References &amp; Financial Literacy Standards
-          </h2>
-          <p>
-            Our curriculum aligns with international financial literacy standards and central bank market structure publications. For supplementary macroeconomic data and technical terminology, learners can also review educational resources from <a href="https://www.investopedia.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Investopedia Financial Dictionary</a>, <a href="https://www.babypips.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">BabyPips Forex Education</a>, <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">TradingView Market Charts</a>, and global central bank foreign exchange surveys from the <a href="https://www.bis.org/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Bank for International Settlements (BIS)</a>.
-          </p>
-        </article>
-      </main>
-
-      <footer style="max-width: 1200px; margin: 0 auto; padding: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #94a3b8;">
-        <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px;">
-          <a href="https://tradebd.online/about" style="color: #cbd5e1;">About Tradebd Academy</a>
-          <a href="https://tradebd.online/privacy" style="color: #cbd5e1;">Privacy Policy</a>
-          <a href="https://tradebd.online/terms" style="color: #cbd5e1;">Terms of Use</a>
-          <a href="https://tradebd.online/disclaimer" style="color: #cbd5e1;">Financial Risk Disclaimer</a>
-          <a href="https://tradebd.online/contact" style="color: #cbd5e1;">Contact Support (support@tradebd.online)</a>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px;">
-          <span>Share Tradebd:</span>
-          <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ftradebd.online%2F" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on Facebook</a>
-          <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Ftradebd.online%2F&amp;text=Tradebd%20%E2%80%93%20Trading%20Academy%20%26%20Technical%20Analysis%20Platform" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on X (Twitter)</a>
-          <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ftradebd.online%2F" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on LinkedIn</a>
-          <a href="https://t.me/share/url?url=https%3A%2F%2Ftradebd.online%2F&amp;text=Tradebd%20Trading%20Academy" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">Share on Telegram</a>
-        </div>
-        <p style="margin: 0;">
-          Educational Disclaimer: Tradebd (tradebd.online) is strictly an educational trading academy and virtual paper-trading simulator. Nothing on this site constitutes financial or investment advice.
-        </p>
-      </footer>
+        </footer>
+      </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

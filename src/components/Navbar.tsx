@@ -177,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => setDrawerOpen(true)}
             aria-label="Open Navigation Menu"
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/90 hover:border-cyan-500/50 rounded-lg text-slate-100 transition-all cursor-pointer shadow-xs"
+            className="min-h-[34px] flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/90 hover:border-cyan-500/50 rounded-lg text-slate-100 transition-all cursor-pointer shadow-xs"
           >
             <Menu className="w-4 h-4 text-cyan-400" />
             <span className="text-xs font-bold tracking-wide">
@@ -191,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               e.preventDefault();
               onSelectTab('CHART');
             }}
-            className="text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 flex items-center gap-2 group"
+            className="min-h-[34px] text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 flex items-center gap-2 group"
           >
             <img
               src="/logo.svg"
@@ -204,8 +204,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </a>
 
           {/* Current Active Section Indicator on Desktop */}
-          <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs text-slate-400">
-            <span className="text-cyan-400 font-semibold">{activeTitle}</span>
+          <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs text-slate-300">
+            <span className="text-cyan-300 font-semibold">{activeTitle}</span>
           </div>
         </div>
 
@@ -215,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="relative" ref={langMenuRef}>
             <button
               onClick={() => setLangMenuOpen(!langMenuOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/90 hover:border-cyan-500/50 rounded-lg text-xs font-medium text-slate-200 transition-colors cursor-pointer"
+              className="min-h-[34px] flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/90 hover:border-cyan-500/50 rounded-lg text-xs font-medium text-slate-100 transition-colors cursor-pointer"
               title="Translate / Change Language"
             >
               <Globe className="w-3.5 h-3.5 text-cyan-400" />
@@ -227,7 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? 'বাংলা'
                     : currentLangOption.nativeName}
               </span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
             </button>
 
             {langMenuOpen && (
@@ -312,13 +312,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onResetDemo}
             title={isBn ? 'ডেমো ফান্ড ইচ্ছামতো পরিবর্তন বা রিসেট করুন' : 'Click to set custom Demo Fund or reset'}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 rounded-lg text-xs font-mono transition-colors cursor-pointer group"
+            className="min-h-[34px] flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 rounded-lg text-xs font-mono transition-colors cursor-pointer group"
           >
-            <span className="hidden sm:inline text-slate-400">{t('demoFund')}:</span>
-            <span className="font-bold text-emerald-400 tabular-numbers">
+            <span className="hidden sm:inline text-slate-300">{t('demoFund')}:</span>
+            <span className="font-bold text-emerald-300 tabular-numbers">
               ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[10px] font-sans font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
+            <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 rounded bg-slate-950 text-emerald-300 border border-emerald-500/40 group-hover:bg-emerald-400 group-hover:text-slate-950 transition-colors">
               {isBn ? 'ফান্ড সেট' : 'Edit'}
             </span>
           </button>
@@ -326,9 +326,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Quick Blog & Article Writer Button */}
           <button
             onClick={() => onSelectTab('BLOG')}
-            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+            className={`min-h-[34px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
               activeTab === 'BLOG'
-                ? 'bg-cyan-500 text-slate-950 border-cyan-400'
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 font-extrabold'
                 : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 border-cyan-500/40'
             }`}
           >
@@ -339,7 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Primary Action Button */}
           <button
             onClick={() => onSelectTab('SIMULATOR')}
-            className="hidden sm:inline-flex px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
+            className="min-h-[34px] hidden sm:inline-flex items-center px-3.5 py-1.5 text-xs font-extrabold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
           >
             {t('practiceTrading')}
           </button>
@@ -350,19 +350,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           LEFT SLIDING NAVIGATION WINDOW (বাম পাশের স্লাইডিং মেনু উইন্ডো)
       ===================================================================== */}
       {drawerOpen && (
-        <div
-          onClick={() => setDrawerOpen(false)}
-          className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-40 transition-opacity"
-          aria-hidden="true"
-        />
-      )}
+        <>
+          <div
+            onClick={() => setDrawerOpen(false)}
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-40 transition-opacity"
+            aria-hidden="true"
+          />
 
-      <aside
-        aria-label="Main Navigation Sliding Drawer"
-        className={`fixed top-0 left-0 bottom-0 w-76 sm:w-84 bg-[#0b0f19] border-r border-slate-800 shadow-2xl z-50 flex flex-col justify-between transform transition-transform duration-300 ease-in-out select-none ${
-          drawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+          <aside
+            aria-label="Main Navigation Sliding Drawer"
+            className="fixed top-0 left-0 bottom-0 w-76 sm:w-84 bg-[#0b0f19] border-r border-slate-800 shadow-2xl z-50 flex flex-col justify-between select-none"
+          >
         {/* Top Brand & Close Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -545,13 +543,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => handleSelectFromDrawer('SIMULATOR')}
-              className="py-1.5 px-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg text-[11px] font-bold transition-colors cursor-pointer"
+              className="py-1.5 px-2.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 rounded-lg text-[11px] font-extrabold transition-colors cursor-pointer"
             >
               {t('practiceTrading')}
             </button>
           </div>
         </div>
-      </aside>
+          </aside>
+        </>
+      )}
     </>
   );
 };

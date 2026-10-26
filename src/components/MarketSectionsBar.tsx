@@ -110,33 +110,33 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
         </div>
 
         {/* Section Switcher Buttons */}
-        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px] font-semibold">
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
           <button
             onClick={() => setSectionView('BOTH')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+            className={`min-h-[32px] px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
               sectionView === 'BOTH'
-                ? 'bg-slate-700 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-400 text-slate-950 font-extrabold shadow-xs'
+                : 'text-slate-200 hover:text-white hover:bg-slate-800'
             }`}
           >
             {labels.showBoth}
           </button>
           <button
             onClick={() => setSectionView('CRYPTO')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+            className={`min-h-[32px] px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
               sectionView === 'CRYPTO'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'text-slate-400 hover:text-amber-300'
+                ? 'bg-amber-400 text-slate-950 font-extrabold'
+                : 'text-slate-200 hover:text-amber-300 hover:bg-slate-800'
             }`}
           >
             {labels.cryptoTab}
           </button>
           <button
             onClick={() => setSectionView('FOREX')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+            className={`min-h-[32px] px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
               sectionView === 'FOREX'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-cyan-300'
+                ? 'bg-cyan-400 text-slate-950 font-extrabold'
+                : 'text-slate-200 hover:text-cyan-300 hover:bg-slate-800'
             }`}
           >
             {labels.forexTab}
@@ -162,7 +162,7 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
             {/* Crypto Section Header */}
             <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-slate-800/80">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
                   <Coins className="w-4 h-4" />
                 </div>
                 <div>
@@ -170,15 +170,15 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                     <h2 className="text-xs font-extrabold text-amber-300 tracking-wide uppercase">
                       {labels.cryptoTitle}
                     </h2>
-                    <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold rounded">
+                    <span className="px-1.5 py-0.5 bg-slate-900 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold rounded">
                       {CRYPTO_ASSETS.length} PAIRS
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400">{labels.cryptoSub}</p>
+                  <p className="text-[11px] text-slate-300">{labels.cryptoSub}</p>
                 </div>
               </div>
               {selectedAsset.category === 'crypto' && (
-                <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 border border-emerald-700/50 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1 bg-emerald-950/90 border border-emerald-700/70 px-2 py-0.5 rounded-md">
                   <CheckCircle2 className="w-3 h-3" />
                   ACTIVE
                 </span>
@@ -196,27 +196,27 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                   <button
                     key={asset.id}
                     onClick={() => onSelectAsset(asset)}
-                    className={`p-2 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    className={`min-h-[54px] p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       isSelected
                         ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
-                        : 'bg-slate-900/90 border-slate-800/90 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+                        : 'bg-slate-900/90 border-slate-800/90 text-slate-200 hover:bg-slate-800 hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1 w-full">
                       <span className="font-mono font-bold text-xs text-white">
                         {asset.symbol}
                       </span>
-                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-950 text-amber-300 border border-amber-500/30">
                         CRYPTO
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-1 mt-1 w-full">
-                      <span className="text-[10px] text-slate-400 truncate">
+                      <span className="text-[10px] text-slate-300 truncate">
                         {getAssetName(asset)}
                       </span>
                       <span
-                        className={`text-[11px] font-mono font-semibold ${
-                          isSelected ? 'text-amber-300' : 'text-slate-300'
+                        className={`text-[11px] font-mono font-semibold tabular-numbers ${
+                          isSelected ? 'text-amber-300' : 'text-slate-200'
                         }`}
                       >
                         ${displayPrice.toFixed(asset.precision)}
@@ -241,7 +241,7 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
             {/* Forex Section Header */}
             <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-slate-800/80">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0">
                   <Globe2 className="w-4 h-4" />
                 </div>
                 <div>
@@ -249,15 +249,15 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                     <h2 className="text-xs font-extrabold text-cyan-300 tracking-wide uppercase">
                       {labels.forexTitle}
                     </h2>
-                    <span className="px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold rounded">
+                    <span className="px-1.5 py-0.5 bg-slate-900 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono font-bold rounded">
                       {FOREX_ASSETS.length} PAIRS
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400">{labels.forexSub}</p>
+                  <p className="text-[11px] text-slate-300">{labels.forexSub}</p>
                 </div>
               </div>
               {selectedAsset.category === 'forex' && (
-                <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 border border-emerald-700/50 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1 bg-emerald-950/90 border border-emerald-700/70 px-2 py-0.5 rounded-md">
                   <CheckCircle2 className="w-3 h-3" />
                   ACTIVE
                 </span>
@@ -275,27 +275,27 @@ export const MarketSectionsBar: React.FC<MarketSectionsBarProps> = ({
                   <button
                     key={asset.id}
                     onClick={() => onSelectAsset(asset)}
-                    className={`p-2 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    className={`min-h-[54px] p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       isSelected
                         ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-sm'
-                        : 'bg-slate-900/90 border-slate-800/90 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+                        : 'bg-slate-900/90 border-slate-800/90 text-slate-200 hover:bg-slate-800 hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1 w-full">
                       <span className="font-mono font-bold text-xs text-white">
                         {asset.symbol}
                       </span>
-                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-950 text-cyan-300 border border-cyan-500/30">
                         FOREX
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-1 mt-1 w-full">
-                      <span className="text-[10px] text-slate-400 truncate">
+                      <span className="text-[10px] text-slate-300 truncate">
                         {getAssetName(asset)}
                       </span>
                       <span
-                        className={`text-[11px] font-mono font-semibold ${
-                          isSelected ? 'text-cyan-300' : 'text-slate-300'
+                        className={`text-[11px] font-mono font-semibold tabular-numbers ${
+                          isSelected ? 'text-cyan-300' : 'text-slate-200'
                         }`}
                       >
                         ${displayPrice.toFixed(asset.precision)}

@@ -11,6 +11,8 @@ deployment:
     - /bin/cp -f public/sitemap.xml $DEPLOYPATH/sitemap.xml
     - /bin/cp -f public/llms.txt $DEPLOYPATH/llms.txt
     - /bin/cp -f public/ai-catalog.json $DEPLOYPATH/ai-catalog.json
+    - /bin/mkdir -p $DEPLOYPATH/.well-known
+    - /bin/cp -f public/.well-known/ai-catalog.json $DEPLOYPATH/.well-known/ai-catalog.json
     - /bin/cp -f public/site.webmanifest $DEPLOYPATH/site.webmanifest
     - /bin/cp -f public/favicon.svg $DEPLOYPATH/favicon.svg
     - /bin/cp -f public/favicon.ico $DEPLOYPATH/favicon.ico

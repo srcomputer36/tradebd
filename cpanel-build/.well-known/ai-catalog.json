@@ -1,0 +1,20 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Tradebd Financial Education Academy"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:tradebd.online:llms-documentation",
+      "displayName": "Tradebd LLM Documentation & Site Guide",
+      "type": "text/markdown",
+      "url": "https://tradebd.online/llms.txt",
+      "description": "Structured markdown documentation covering the Tradebd Forex & Crypto Trading Academy, Technical Analysis Platform, Economic Calendar, and Virtual Paper Trading Simulator.",
+      "representativeQueries": [
+        "Learn Forex and Crypto trading on Tradebd",
+        "Practice virtual paper trading simulator on tradebd.online",
+        "Check Forex market session hours in Bangladesh Standard Time BST"
+      ]
+    }
+  ]
+}

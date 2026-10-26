@@ -1,29 +1,32 @@
-# Tradebd (tradebd.online)
+# Tradebd – Trading Academy & Technical Analysis Platform
 
-> Tradebd is a free financial education academy, technical analysis chart platform, and real-time virtual paper trading simulator for Forex and Cryptocurrency markets in Bengali and English.
+> Tradebd is a free Forex and Cryptocurrency financial education academy, interactive candlestick technical analysis platform, Bangladesh Standard Time (BST UTC+6) economic calendar, and customizable virtual paper trading simulator.
 
-## About
-Tradebd provides free market education, live candlestick charts with customizable indicators (EMA, SMA, Bollinger Bands, RSI, Volume), a risk-free paper trading simulator with customizable balances ($50 to $10,000,000), global trading session clocks converted to Bangladesh Standard Time (BST / UTC+6), an economic calendar, and comprehensive technical analysis guides.
+Tradebd provides free, institutional-grade market education and real-time technical charting tools in English, Bengali, and 17 global languages. Learners can practice analyzing BTC/USDT, ETH/USDT, EUR/USD, GBP/USD, USD/JPY, and XAU/USD (Gold) using Exponential Moving Averages (EMA 20/50/200), Bollinger Bands, RSI (14), Volume, and Support/Resistance levels without financial risk.
 
-## Core Features
-- **Live Candlestick Chart**: Interactive charts for BTC/USDT, ETH/USDT, EUR/USD, GBP/USD, USD/JPY, and XAU/USD.
-- **Paper Trading Simulator**: Long/Short execution, custom leverage, automated stop-loss and take-profit targets, zero real-money risk.
-- **Trading Academy**: Step-by-step guides from beginner basics to advanced market structure, price action, and risk management.
-- **Candlestick Pattern Gallery**: Visual cheat sheet and reference guide for 18+ high-probability candlestick patterns.
-- **Economic Calendar & Global Sessions**: Live countdowns and session tracker for Sydney, Tokyo, London, and New York in BST (UTC+6).
-- **Position Size & Lot Calculator**: Calculates lot size, pip value, and risk-to-reward ratio.
-- **Educational Trading Blog**: Bilingual articles in Bengali and English covering forex trading strategies, risk management, and market psychology.
+## Core Platform Tools
 
-## URLs & Site Navigation
-- Homepage / Live Chart: https://tradebd.online/
-- Paper Trading Simulator: https://tradebd.online/simulator
-- Economic Calendar & Sessions: https://tradebd.online/calendar
-- Trading Academy: https://tradebd.online/academy
-- Candlestick Patterns: https://tradebd.online/patterns
-- Risk & Lot Calculator: https://tradebd.online/calculator
-- Educational Blog: https://tradebd.online/blog
-- About Us: https://tradebd.online/about
-- Privacy Policy: https://tradebd.online/privacy
-- Terms of Use: https://tradebd.online/terms
-- Risk Disclaimer: https://tradebd.online/disclaimer
-- Sitemap: https://tradebd.online/sitemap.xml
+- [Live Candlestick Chart & Technical Analysis Platform](https://tradebd.online/): Interactive multi-timeframe candlestick charts with EMA, Bollinger Bands, RSI, Volume, and quick order execution.
+- [Virtual Paper Trading Simulator](https://tradebd.online/simulator): Risk-free Long and Short virtual trading simulator with customizable demo balance ($10 to $10,000,000), leverage, Stop-Loss, and Take-Profit automation.
+- [Forex Economic Calendar & Global Market Sessions (BST)](https://tradebd.online/calendar): Live Sydney, Tokyo, London, and New York market session clocks in Bangladesh Standard Time (UTC+6) and high-impact economic news tracker.
+- [Forex & Crypto Trading Academy Course](https://tradebd.online/academy): Structured beginner-to-institutional trading lessons covering market structure, price action, indicators, and risk management.
+- [Candlestick Chart Patterns Guide](https://tradebd.online/patterns): Visual reference library and cheat sheet for bullish and bearish candlestick patterns with entry and exit rules.
+- [Position Size & Risk Calculator](https://tradebd.online/calculator): Professional lot size, pip value, and Risk-to-Reward (R:R) ratio calculator for enforcing the 1%–2% capital protection rule.
+- [Interactive Chart Setup Mentor](https://tradebd.online/mentor): Practice evaluating trade setups, RSI momentum, and EMA alignment.
+
+## Educational Trading Blog & Guides
+
+- [Educational Trading Blog Hub](https://tradebd.online/blog): Bilingual articles on Forex trading, candlestick patterns, trading psychology, and risk management.
+- [Complete Forex Trading Guide](https://tradebd.online/blog/forex-trading-bangla-complete-guide): Beginner-to-pro guide to currency pairs, pips, lots, leverage, and market structure.
+- [Candlestick Chart Patterns Masterclass](https://tradebd.online/blog/candlestick-chart-patterns-bangla-guide): How to identify Hammer, Engulfing, Doji, Morning Star, and Shooting Star setups.
+- [Risk Management & Lot Size Formula](https://tradebd.online/blog/risk-management-lot-size-stop-loss-formula): How to calculate Stop-Loss and protect trading capital using the 1% rule.
+- [Best Forex Trading Sessions in Bangladesh Time (BST)](https://tradebd.online/blog/best-forex-trading-sessions-bangladesh-time-bst): Detailed schedule of Sydney, Tokyo, London, and New York sessions in UTC+6.
+
+## Legal & Organization Information
+
+- [About Tradebd Financial Education Academy](https://tradebd.online/about): Mission, educational standards, and platform overview.
+- [Contact Support](https://tradebd.online/contact): Editorial and technical support contact details.
+- [Privacy Policy](https://tradebd.online/privacy): Data protection, cookie usage, and compliance policy.
+- [Terms of Use](https://tradebd.online/terms): Platform usage terms and conditions.
+- [Financial Risk Disclaimer](https://tradebd.online/disclaimer): Educational and non-investment advice disclosure.
+- [XML Sitemap](https://tradebd.online/sitemap.xml): Complete index of public pages and educational articles.

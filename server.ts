@@ -630,9 +630,19 @@ app.post(['/api/blogs', '/api-blogs.php'], apiRateLimiter, async (req, res) => {
   }
 });
 
+app.get(['/.well-known/ai-catalog.json', '/ai-catalog.json'], (_req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  const catalogPath = path.resolve(__dirname, 'public', 'ai-catalog.json');
+  if (fs.existsSync(catalogPath)) {
+    return res.sendFile(catalogPath);
+  }
+  return res.status(404).json({ error: 'Not found' });
+});
+
 async function start() {
   if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    app.use(express.static(path.resolve(__dirname, 'dist'), { dotfiles: 'allow' }));
     app.use((_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
