@@ -643,7 +643,14 @@ app.get(['/.well-known/ai-catalog.json', '/ai-catalog.json'], (_req, res) => {
 async function start() {
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.resolve(__dirname, 'dist'), { dotfiles: 'allow' }));
-    app.use((_req, res) => {
+    app.use((req, res) => {
+      const cleanRoute = req.path.replace(/^\/+|\/+$/g, '');
+      if (cleanRoute && /^[a-zA-Z0-9\-_/]+$/.test(cleanRoute)) {
+        const prerenderFile = path.resolve(__dirname, 'dist', 'prerender', `${cleanRoute}.html`);
+        if (fs.existsSync(prerenderFile)) {
+          return res.sendFile(prerenderFile);
+        }
+      }
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   } else {

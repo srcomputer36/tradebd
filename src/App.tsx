@@ -330,6 +330,8 @@ export default function App() {
 
     setMetaTag('meta[property="og:url"]', 'content', canonicalUrl);
     setMetaTag('link[rel="canonical"]', 'href', canonicalUrl);
+    setMetaTag('link[rel="alternate"][hreflang="en"]', 'href', canonicalUrl);
+    setMetaTag('link[rel="alternate"][hreflang="bn"]', 'href', `${canonicalUrl}?lang=bn`);
 
     // Send virtual pageview to Google Analytics (GA4) on tab/route change
     try {

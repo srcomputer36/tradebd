@@ -135,6 +135,23 @@
     <meta name="twitter:description" content="Tradebd is a free Forex &amp; Crypto Trading Academy, live technical analysis chart platform, economic calendar, and virtual paper trading simulator." />
     <meta name="twitter:image" content="https://tradebd.online/og-banner.png" />
     <meta name="twitter:image:alt" content="Tradebd – Trading Academy &amp; Technical Analysis Platform" />
+    <script>
+      (function() {
+        try {
+          var rawPath = window.location.pathname.replace(/\/+$/, '');
+          var cleanPath = rawPath && rawPath !== '/index.html' ? rawPath : '/';
+          var canonicalHref = 'https://tradebd.online' + (cleanPath === '/' ? '/' : cleanPath);
+          var canEl = document.querySelector('link[rel="canonical"]');
+          if (canEl) canEl.setAttribute('href', canonicalHref);
+          var enEl = document.querySelector('link[rel="alternate"][hreflang="en"]');
+          if (enEl) enEl.setAttribute('href', canonicalHref);
+          var bnEl = document.querySelector('link[rel="alternate"][hreflang="bn"]');
+          if (bnEl) bnEl.setAttribute('href', canonicalHref + '?lang=bn');
+          var ogUrlEl = document.querySelector('meta[property="og:url"]');
+          if (ogUrlEl) ogUrlEl.setAttribute('content', canonicalHref);
+        } catch (e) {}
+      })();
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -231,7 +248,7 @@
     <noscript>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional" />
     </noscript>
-    <script type="module" crossorigin src="/assets/index-CSFRN55k.js"></script>
+    <script type="module" crossorigin src="/assets/index-5myiTi-d.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-WkwZ5CU-.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-icons-D5uxeAVU.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-yoHdVbct.js">

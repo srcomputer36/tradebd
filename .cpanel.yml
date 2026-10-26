@@ -3,8 +3,9 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/tradebdo/public_html/
     - /bin/rm -f $DEPLOYPATH/welcome.php $DEPLOYPATH/index.php $DEPLOYPATH/default.html
-    - /bin/rm -rf $DEPLOYPATH/assets
+    - /bin/rm -rf $DEPLOYPATH/assets $DEPLOYPATH/prerender
     - /bin/cp -Rf cpanel-build/assets $DEPLOYPATH/
+    - /bin/cp -Rf cpanel-build/prerender $DEPLOYPATH/
     - /bin/cp -f cpanel-build/index.html $DEPLOYPATH/index.html
     - /bin/cp -f public/.htaccess $DEPLOYPATH/.htaccess
     - /bin/cp -f public/robots.txt $DEPLOYPATH/robots.txt

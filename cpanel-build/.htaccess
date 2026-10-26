@@ -22,11 +22,22 @@ AddType image/x-icon .ico
   RewriteCond %{HTTP_HOST} ^(?:www\.)?tradebd\.online$ [NC]
   RewriteRule ^(.*)$ https://tradebd.online/$1 [L,R=301]
 
+  # Normalize trailing slash on sub-routes to match canonical URLs (301 redirect)
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+)/$ https://tradebd.online/$1 [L,R=301]
+
   # Block direct access to internal blog storage & admin password hash files
   RewriteRule ^(\.tradebd-admin-hash\.php|blogs-data\.json)$ - [F,L]
 
   # Serve .well-known/ai-catalog.json from root ai-catalog.json if .well-known folder is not present
   RewriteRule ^\.well-known/ai-catalog\.json$ /ai-catalog.json [L]
+
+  # Allow internal delivery of pre-rendered static route HTML files
+  RewriteRule ^prerender/.*\.html$ - [L]
+
+  # Serve pre-rendered static SEO HTML for each route in sitemap.xml (HTTP 200 with unique canonical tag)
+  RewriteCond %{DOCUMENT_ROOT}/prerender/$1.html -f
+  RewriteRule ^([a-zA-Z0-9\-_/]+?)/?$ /prerender/$1.html [L]
 
   # Do not rewrite existing SEO, icon, manifest, or API files
   RewriteRule ^index\.html$ - [L]
