@@ -80,24 +80,6 @@ export default function App() {
   const [timeframe, setTimeframe] = useState<string>('15m');
   const [simulatorDefaultSide, setSimulatorDefaultSide] = useState<OrderSide>('LONG');
 
-  // Cookie Consent Banner state for Google AdSense / GDPR compliance
-  const [cookieConsentAccepted, setCookieConsentAccepted] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('tradebd_cookie_consent') === 'accepted';
-    } catch {
-      return false;
-    }
-  });
-
-  const handleAcceptCookies = () => {
-    setCookieConsentAccepted(true);
-    try {
-      localStorage.setItem('tradebd_cookie_consent', 'accepted');
-    } catch {
-      // ignore
-    }
-  };
-
   const openLegalPage = useCallback((section: LegalSection) => {
     setLegalSection(section);
     setActiveTab('LEGAL');
@@ -109,6 +91,32 @@ export default function App() {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // Dismiss static #initial-app-shell on mount and wire #tradebd-cookie-banner events
+  useEffect(() => {
+    document.documentElement.classList.add('app-mounted');
+    const onOpenPrivacy = () => openLegalPage('PRIVACY');
+    window.addEventListener('tradebd:open-privacy', onOpenPrivacy);
+    return () => window.removeEventListener('tradebd:open-privacy', onOpenPrivacy);
+  }, [openLegalPage]);
+
+  useEffect(() => {
+    const textEl = document.getElementById('cookie-banner-text');
+    const privEl = document.getElementById('cookie-privacy-btn');
+    const accEl = document.getElementById('cookie-accept-btn');
+    if (textEl) {
+      textEl.textContent =
+        language === 'bn'
+          ? 'আপনার ব্রাউজিং অভিজ্ঞতা উন্নত করতে, ডেমো ট্রেডিং ডাটা সংরক্ষণ করতে এবং প্রাসঙ্গিক বিজ্ঞাপন (Google AdSense) প্রদর্শনের জন্য আমরা কুকিজ ব্যবহার করি।'
+          : 'We use cookies and local storage to save your virtual trading progress and serve relevant educational content and advertisements.';
+    }
+    if (privEl) {
+      privEl.textContent = language === 'bn' ? 'গোপনীয়তা নীতি দেখুন' : 'Privacy Policy';
+    }
+    if (accEl) {
+      accEl.textContent = language === 'bn' ? 'সম্মতি দিন (Accept)' : 'Accept Cookies';
+    }
+  }, [language]);
 
   const handleSelectTab = useCallback((tab: NavTab) => {
     setActiveTab(tab);
@@ -1716,29 +1724,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-
-      {/* Cookie Consent Banner (GDPR & Google AdSense Compliance) */}
-      {!cookieConsentAccepted && (
-        <div className="fixed bottom-16 md:bottom-4 left-3 right-3 md:left-auto md:right-5 md:max-w-lg bg-[#0f172a] border border-slate-700 rounded-xl p-4 shadow-2xl z-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="text-xs text-slate-200 leading-relaxed">
-            {language === 'bn'
-              ? 'আপনার ব্রাউজিং অভিজ্ঞতা উন্নত করতে, ডেমো ট্রেডিং ডাটা সংরক্ষণ করতে এবং প্রাসঙ্গিক বিজ্ঞাপন (Google AdSense) প্রদর্শনের জন্য আমরা কুকিজ ব্যবহার করি।'
-              : 'We use cookies and local storage to save your virtual trading progress and serve relevant educational content and advertisements.'}{' '}
-            <button
-              onClick={() => openLegalPage('PRIVACY')}
-              className="min-h-[28px] px-1.5 py-0.5 text-cyan-300 hover:underline font-semibold cursor-pointer inline-flex items-center"
-            >
-              {language === 'bn' ? 'গোপনীয়তা নীতি দেখুন' : 'Privacy Policy'}
-            </button>
-          </div>
-          <button
-            onClick={handleAcceptCookies}
-            className="min-h-[36px] px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-xs rounded-lg shrink-0 transition-colors cursor-pointer"
-          >
-            {language === 'bn' ? 'সম্মতি দিন (Accept)' : 'Accept Cookies'}
-          </button>
-        </div>
-      )}
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-1.5 px-1 shrink-0 z-40 overflow-x-auto">

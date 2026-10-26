@@ -5,15 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       document.documentElement.classList.add('js-ready');
+      try {
+        if (localStorage.getItem('tradebd_cookie_consent') === 'accepted') {
+          document.documentElement.classList.add('cookies-accepted');
+        }
+      } catch (e) {}
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-JPKV5KJD8X');
       (function() {
-        var gtagLoaded = false;
-        function loadGtag() {
-          if (gtagLoaded) return;
-          gtagLoaded = true;
+        var deferredLoaded = false;
+        function loadDeferredAssets() {
+          if (deferredLoaded) return;
+          deferredLoaded = true;
+          var f = document.createElement('link');
+          f.rel = 'stylesheet';
+          f.href = 'https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional';
+          document.head.appendChild(f);
           var s = document.createElement('script');
           s.async = true;
           s.src = 'https://www.googletagmanager.com/gtag/js?id=G-JPKV5KJD8X';
@@ -21,10 +30,10 @@
         }
         var events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
         events.forEach(function(evt) {
-          window.addEventListener(evt, loadGtag, { once: true, passive: true });
+          window.addEventListener(evt, loadDeferredAssets, { once: true, passive: true });
         });
         window.addEventListener('load', function() {
-          setTimeout(loadGtag, 5500);
+          setTimeout(loadDeferredAssets, 5500);
         }, { once: true });
       })();
     </script>
@@ -34,6 +43,7 @@
         color: #f1f5f9;
         margin: 0;
         padding: 0;
+        font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       #root {
         min-height: 100vh;
@@ -51,6 +61,55 @@
         white-space: nowrap !important;
         border: 0 !important;
         pointer-events: none !important;
+      }
+      #initial-app-shell {
+        display: none;
+      }
+      .js-ready #initial-app-shell {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background-color: #070b12;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .app-mounted #initial-app-shell {
+        display: none !important;
+      }
+      #tradebd-cookie-banner {
+        position: fixed;
+        bottom: 64px;
+        left: 12px;
+        right: 12px;
+        z-index: 50;
+        background-color: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      @media (min-width: 640px) {
+        #tradebd-cookie-banner {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+      @media (min-width: 768px) {
+        #tradebd-cookie-banner {
+          bottom: 16px;
+          left: auto;
+          right: 20px;
+          max-width: 512px;
+        }
+      }
+      .cookies-accepted #tradebd-cookie-banner {
+        display: none !important;
       }
     </style>
     <script>
@@ -243,14 +302,44 @@
         ]
       }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional" media="print" onload="this.media='all'" />
     <noscript>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=optional" />
     </noscript>
   </head>
   <body class="bg-[#070b12] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+    <!-- Instant Visual Terminal Shell for sub-second First Contentful Paint & Speed Index (Zero CLS) -->
+    <div id="initial-app-shell" aria-hidden="true">
+      <div style="height: 56px; background: #090d16; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: #10b981;"></div>
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #ffffff; line-height: 1.1;">Tradebd</div>
+            <div style="font-size: 10px; color: #94a3b8;">Trading Academy &amp; Technical Analysis</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="height: 30px; width: 96px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+          <div style="height: 30px; width: 72px; border-radius: 8px; background: #22d3ee;"></div>
+        </div>
+      </div>
+      <div style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; flex: 1;">
+        <div style="height: 112px; border-radius: 12px; background: #0b0f19; border: 1px solid #1e293b; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="display: flex; gap: 8px;">
+            <div style="height: 28px; width: 150px; border-radius: 8px; background: #22d3ee;"></div>
+            <div style="height: 28px; width: 110px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+            <div style="height: 28px; width: 110px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;">
+            <div style="height: 44px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+            <div style="height: 44px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+            <div style="height: 44px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+            <div style="height: 44px; border-radius: 8px; background: #0f172a; border: 1px solid #1e293b;"></div>
+          </div>
+        </div>
+        <div style="flex: 1; min-height: 420px; border-radius: 12px; background: #0b0f19; border: 1px solid #1e293b;"></div>
+      </div>
+    </div>
+
     <div id="root">
       <div id="seo-prerender">
         <header style="max-width: 1200px; margin: 0 auto; padding: 16px 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
@@ -351,6 +440,42 @@
         </footer>
       </div>
     </div>
+
+    <!-- Persistent GDPR & Google AdSense Cookie Consent Banner (Painted at 0ms for instant LCP with 0ms render delay) -->
+    <div id="tradebd-cookie-banner" role="region" aria-label="Cookie Consent">
+      <div style="font-size: 12px; color: #e2e8f0; line-height: 1.625;">
+        <span id="cookie-banner-text">We use cookies and local storage to save your virtual trading progress and serve relevant educational content and advertisements.</span>
+        <button
+          type="button"
+          id="cookie-privacy-btn"
+          style="min-height: 28px; padding: 2px 6px; margin-left: 4px; background: transparent; border: none; color: #67e8f9; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline;"
+        >Privacy Policy</button>
+      </div>
+      <button
+        type="button"
+        id="cookie-accept-btn"
+        style="min-height: 36px; padding: 8px 16px; background-color: #34d399; color: #020617; font-weight: 800; font-size: 12px; border: none; border-radius: 8px; flex-shrink: 0; cursor: pointer;"
+      >Accept Cookies</button>
+    </div>
+    <script>
+      (function() {
+        var acceptBtn = document.getElementById('cookie-accept-btn');
+        if (acceptBtn) {
+          acceptBtn.addEventListener('click', function() {
+            document.documentElement.classList.add('cookies-accepted');
+            try {
+              localStorage.setItem('tradebd_cookie_consent', 'accepted');
+            } catch (e) {}
+          });
+        }
+        var privacyBtn = document.getElementById('cookie-privacy-btn');
+        if (privacyBtn) {
+          privacyBtn.addEventListener('click', function() {
+            window.dispatchEvent(new CustomEvent('tradebd:open-privacy'));
+          });
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

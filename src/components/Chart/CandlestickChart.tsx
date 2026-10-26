@@ -192,22 +192,23 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const isUp = priceChange >= 0;
 
   // Cache container dimensions via ResizeObserver to avoid synchronous getBoundingClientRect forced reflows
-  const canvasSizeRef = useRef<{ width: number; height: number }>({ width: 800, height: 440 });
+  const canvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+  const dprRef = useRef<number>(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
 
   // Render chart with pixel-smooth fractional panning
   const renderChart = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
     const width = canvasSizeRef.current.width;
     const height = canvasSizeRef.current.height;
     if (width <= 0 || height <= 0) return;
 
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     // Handle high DPI without reallocating GPU buffer unless size changed
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = dprRef.current;
     const targetW = Math.round(width * dpr);
     const targetH = Math.round(height * dpr);
     if (canvas.width !== targetW || canvas.height !== targetH) {
@@ -684,26 +685,37 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     timeframe,
   ]);
 
-  // Observe container size via ResizeObserver (zero forced reflow) and redraw on data update
+  // Observe container size via ResizeObserver (zero forced reflow) and schedule draw in requestAnimationFrame
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    let rafId = 0;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const w = Math.round(entry.contentRect.width);
         const h = Math.round(entry.contentRect.height);
         if (w > 0 && h > 0) {
-          canvasSizeRef.current = { width: w, height: h };
-          renderChart();
+          const prev = canvasSizeRef.current;
+          if (prev.width !== w || prev.height !== h) {
+            canvasSizeRef.current = { width: w, height: h };
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+              renderChart();
+            });
+          }
         }
       }
     });
     ro.observe(container);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+    };
   }, [renderChart]);
 
   useEffect(() => {
+    if (canvasSizeRef.current.width <= 0 || canvasSizeRef.current.height <= 0) return;
     const rafId = requestAnimationFrame(() => {
       renderChart();
     });

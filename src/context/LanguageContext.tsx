@@ -187,16 +187,25 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
   const isRtl = currentLangOption.dir === 'rtl';
 
+  const [extraDicts, setExtraDicts] = useState<Partial<Record<Language, Record<string, string>>>>({});
+
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     if (language !== 'en' && language !== 'bn') {
+      import('../i18n/extraTranslations')
+        .then((mod) => {
+          setExtraDicts(mod.EXTRA_TRANSLATIONS);
+        })
+        .catch(() => {
+          // ignore
+        });
       triggerGoogleTranslate(language);
     }
   }, [language, isRtl]);
 
   const t = (key: string): string => {
-    const langDict = TRANSLATIONS[language];
+    const langDict = TRANSLATIONS[language] || extraDicts[language];
     if (langDict && langDict[key]) {
       return langDict[key];
     }
