@@ -109,8 +109,143 @@ function translateTextServer($text, $sourceLang, $targetLang) {
   return trim($out) !== '' ? $out : $text;
 }
 
+function buildCustomBlogHtml($article) {
+  $indexFile = __DIR__ . '/index.html';
+  if (!file_exists($indexFile)) {
+    return null;
+  }
+  $baseHtml = @file_get_contents($indexFile);
+  if (!$baseHtml) {
+    return null;
+  }
+
+  $slug = preg_replace('/[^a-zA-Z0-9\-_]/', '', (string)($article['slug'] ?? ''));
+  if ($slug === '') {
+    return null;
+  }
+
+  $canonicalUrl = 'https://tradebd.online/blog/' . $slug;
+  $rawTitle = trim((string)($article['titleEn'] ?? $article['titleBn'] ?? 'Trading Guide'));
+  $fullTitle = $rawTitle . ' – Tradebd';
+  $rawDesc = trim((string)($article['excerptEn'] ?? $article['excerptBn'] ?? $rawTitle));
+  $rawLead = trim((string)($article['excerptBn'] ?? $article['excerptEn'] ?? ''));
+  $rawContentEn = trim((string)($article['contentEn'] ?? ''));
+  $rawContentBn = trim((string)($article['contentBn'] ?? ''));
+
+  $safeTitle = htmlspecialchars($fullTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+  $safeDesc = htmlspecialchars($rawDesc, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+  $safeH1 = htmlspecialchars($rawTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+  $safeLead = htmlspecialchars($rawLead, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+  $paragraphsHtml = '';
+  $combinedText = $rawContentEn !== '' ? $rawContentEn : $rawContentBn;
+  foreach (preg_split("/\n\s*\n/", $combinedText) as $para) {
+    $trimmed = trim($para);
+    if ($trimmed === '') continue;
+    $escaped = htmlspecialchars($trimmed, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $escaped = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $escaped);
+    if ( strpos($trimmed, '## ') === 0 ) {
+      $headingText = htmlspecialchars(substr($trimmed, 3), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+      $paragraphsHtml .= "<h2 style=\"font-size: 20px; font-weight: 700; margin: 22px 0 10px 0;\">{$headingText}</h2>\n";
+    } else {
+      $paragraphsHtml .= "<p>{$escaped}</p>\n";
+    }
+  }
+
+  if ($rawContentBn !== '' && $rawContentEn !== '' && $rawContentBn !== $rawContentEn) {
+    $paragraphsHtml .= "<hr style=\"margin: 24px 0; opacity: 0.2;\" />\n";
+    foreach (preg_split("/\n\s*\n/", $rawContentBn) as $paraBn) {
+      $trimmedBn = trim($paraBn);
+      if ($trimmedBn === '') continue;
+      $escapedBn = htmlspecialchars($trimmedBn, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+      $escapedBn = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $escapedBn);
+      $paragraphsHtml .= "<p>{$escapedBn}</p>\n";
+    }
+  }
+
+  $pageHtml = $baseHtml;
+  $pageHtml = preg_replace('/<title>[\s\S]*?<\/title>/', "<title>{$safeTitle}</title>", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+name="description"\s+content="[^"]*"\s*\/>/', "<meta name=\"description\" content=\"{$safeDesc}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<link\s+rel="canonical"\s+href="[^"]*"\s*\/>/', "<link rel=\"canonical\" href=\"{$canonicalUrl}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<link\s+rel="alternate"\s+hreflang="en"\s+href="[^"]*"\s*\/>/', "<link rel=\"alternate\" hreflang=\"en\" href=\"{$canonicalUrl}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<link\s+rel="alternate"\s+hreflang="bn"\s+href="[^"]*"\s*\/>/', "<link rel=\"alternate\" hreflang=\"bn\" href=\"{$canonicalUrl}?lang=bn\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<link\s+rel="alternate"\s+hreflang="x-default"\s+href="[^"]*"\s*\/>/', "<link rel=\"alternate\" hreflang=\"x-default\" href=\"{$canonicalUrl}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+property="og:type"\s+content="[^"]*"\s*\/>/', '<meta property="og:type" content="article" />', $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+property="og:url"\s+content="[^"]*"\s*\/>/', "<meta property=\"og:url\" content=\"{$canonicalUrl}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+property="og:title"\s+content="[^"]*"\s*\/>/', "<meta property=\"og:title\" content=\"{$safeTitle}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/', "<meta property=\"og:description\" content=\"{$safeDesc}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/>/', "<meta name=\"twitter:title\" content=\"{$safeTitle}\" />", $pageHtml, 1);
+  $pageHtml = preg_replace('/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/>/', "<meta name=\"twitter:description\" content=\"{$safeDesc}\" />", $pageHtml, 1);
+
+  $schemaGraph = [
+    '@context' => 'https://schema.org',
+    '@graph' => [
+      [
+        '@type' => 'BreadcrumbList',
+        '@id' => $canonicalUrl . '#breadcrumb',
+        'itemListElement' => [
+          ['@type' => 'ListItem', 'position' => 1, 'name' => 'Tradebd Home', 'item' => 'https://tradebd.online/'],
+          ['@type' => 'ListItem', 'position' => 2, 'name' => 'Trading Blog', 'item' => 'https://tradebd.online/blog'],
+          ['@type' => 'ListItem', 'position' => 3, 'name' => $rawTitle, 'item' => $canonicalUrl],
+        ],
+      ],
+      [
+        '@type' => 'BlogPosting',
+        '@id' => $canonicalUrl . '#article',
+        'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $canonicalUrl],
+        'headline' => $rawTitle,
+        'description' => $rawDesc,
+        'image' => !empty($article['coverImage']) ? $article['coverImage'] : 'https://tradebd.online/og-banner.png',
+        'datePublished' => !empty($article['publishedAt']) ? $article['publishedAt'] : date('Y-m-d'),
+        'dateModified' => date('Y-m-d'),
+        'author' => [
+          '@type' => 'Organization',
+          'name' => !empty($article['author']) ? $article['author'] : 'Tradebd Editorial Team',
+          'url' => 'https://tradebd.online/',
+        ],
+        'publisher' => [
+          '@type' => 'Organization',
+          'name' => 'Tradebd Financial Education Academy',
+          'logo' => [
+            '@type' => 'ImageObject',
+            'url' => 'https://tradebd.online/logo.svg',
+          ],
+        ],
+        'inLanguage' => ['en', 'bn'],
+      ],
+    ],
+  ];
+
+  $jsonLdTag = "\n    <script type=\"application/ld+json\">" . json_encode($schemaGraph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n  </head>";
+  $pageHtml = str_replace('</head>', $jsonLdTag, $pageHtml);
+
+  $articleHtml = "<article>\n<h1>{$safeH1}</h1>\n<p><strong>{$safeLead}</strong></p>\n{$paragraphsHtml}\n<p><a href=\"https://tradebd.online/blog\">← Back to Tradebd Educational Blog</a> | <a href=\"https://tradebd.online/simulator\">Practice on Paper Trading Simulator</a></p>\n</article>";
+  $pageHtml = preg_replace('/<article>[\s\S]*?<\/article>/', $articleHtml, $pageHtml, 1);
+
+  return $pageHtml;
+}
+
+function syncCustomBlogPrerenders($customArticles) {
+  $blogPrerenderDir = __DIR__ . '/prerender/blog';
+  if (!is_dir($blogPrerenderDir)) {
+    @mkdir($blogPrerenderDir, 0755, true);
+  }
+  if (!is_dir($blogPrerenderDir)) {
+    return;
+  }
+  foreach ($customArticles as $art) {
+    $slug = preg_replace('/[^a-zA-Z0-9\-_]/', '', (string)($art['slug'] ?? ''));
+    if ($slug === '') continue;
+    $html = buildCustomBlogHtml($art);
+    if ($html) {
+      @file_put_contents($blogPrerenderDir . '/' . $slug . '.html', $html, LOCK_EX);
+    }
+  }
+}
+
 function syncSitemap($sitemapPath, $customArticles) {
-  $today = date('Y-m-d');
+  $realYear = (int)date('Y');
+  $today = ($realYear > 2025) ? '2025-02-25' : date('Y-m-d');
   $baseUrls = [
     ['loc' => 'https://tradebd.online/', 'freq' => 'daily', 'prio' => '1.0'],
     ['loc' => 'https://tradebd.online/blog', 'freq' => 'daily', 'prio' => '0.95'],
@@ -168,12 +303,45 @@ function syncSitemap($sitemapPath, $customArticles) {
   $xml .= "</urlset>\n";
 
   @file_put_contents($sitemapPath, $xml, LOCK_EX);
+  syncCustomBlogPrerenders($customArticles);
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
   $articles = loadArticles($storeFile);
+
+  // Dynamic SEO Pre-render Responder for Custom Blog URLs (/blog/<slug>)
+  if (!empty($_GET['prerender_slug'])) {
+    $reqSlug = preg_replace('/[^a-zA-Z0-9\-_]/', '', (string)$_GET['prerender_slug']);
+    $staticPrerender = __DIR__ . '/prerender/blog/' . $reqSlug . '.html';
+    if (file_exists($staticPrerender)) {
+      header('Content-Type: text/html; charset=utf-8');
+      header('Cache-Control: public, max-age=300');
+      readfile($staticPrerender);
+      exit;
+    }
+    foreach ($articles as $art) {
+      if (($art['slug'] ?? '') === $reqSlug) {
+        $generatedHtml = buildCustomBlogHtml($art);
+        if ($generatedHtml) {
+          @file_put_contents($staticPrerender, $generatedHtml, LOCK_EX);
+          header('Content-Type: text/html; charset=utf-8');
+          header('Cache-Control: public, max-age=300');
+          echo $generatedHtml;
+          exit;
+        }
+      }
+    }
+    // Fallback to index.html if slug not found
+    $indexFile = __DIR__ . '/index.html';
+    if (file_exists($indexFile)) {
+      header('Content-Type: text/html; charset=utf-8');
+      readfile($indexFile);
+      exit;
+    }
+  }
+
   if (!empty($articles) && !empty($articles[0]['slug'])) {
     $firstSlugUrl = 'https://tradebd.online/blog/' . rawurlencode($articles[0]['slug']);
     $sitemapRaw = file_exists($sitemapFile) ? @file_get_contents($sitemapFile) : '';
@@ -273,10 +441,19 @@ if ($method === 'POST') {
 
   if ($action === 'delete' && !empty($data['id'])) {
     $delId = (string)$data['id'];
+    $deletedSlug = '';
     $filtered = [];
     foreach ($articles as $existing) {
-      if (($existing['id'] ?? '') !== $delId) {
+      if (($existing['id'] ?? '') === $delId) {
+        $deletedSlug = preg_replace('/[^a-zA-Z0-9\-_]/', '', (string)($existing['slug'] ?? ''));
+      } else {
         $filtered[] = $existing;
+      }
+    }
+    if ($deletedSlug !== '') {
+      $oldPrerender = __DIR__ . '/prerender/blog/' . $deletedSlug . '.html';
+      if (file_exists($oldPrerender)) {
+        @unlink($oldPrerender);
       }
     }
     saveArticles($storeFile, $filtered);

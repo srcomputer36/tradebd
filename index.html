@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light-mode">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,14 @@
         if (localStorage.getItem('tradebd_cookie_consent') === 'accepted') {
           document.documentElement.classList.add('cookies-accepted');
         }
-      } catch (e) {}
+        if (localStorage.getItem('tradebd_theme_v2') === 'dark') {
+          document.documentElement.classList.remove('light-mode');
+        } else {
+          document.documentElement.classList.add('light-mode');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('light-mode');
+      }
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
@@ -45,22 +52,23 @@
         padding: 0;
         font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
+      html.light-mode, html.light-mode body {
+        background-color: #eef2f6;
+        color: #0f172a;
+      }
       #root {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
       }
-      .js-ready #seo-prerender {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        padding: 0 !important;
-        margin: -1px !important;
-        overflow: hidden !important;
-        clip: rect(0, 0, 0, 0) !important;
-        white-space: nowrap !important;
-        border: 0 !important;
-        pointer-events: none !important;
+      #seo-prerender {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        line-height: 1.65;
+      }
+      .app-mounted #seo-prerender {
+        display: none !important;
       }
       #initial-app-shell {
         display: none;
@@ -75,7 +83,8 @@
         pointer-events: none;
         overflow: hidden;
       }
-      .app-mounted #initial-app-shell {
+      .app-mounted #initial-app-shell,
+      html.light-mode #initial-app-shell {
         display: none !important;
       }
       #tradebd-cookie-banner {
@@ -188,9 +197,11 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://tradebd.online/" />
     <link rel="alternate" hreflang="en" href="https://tradebd.online/" />
     <link rel="alternate" hreflang="bn" href="https://tradebd.online/?lang=bn" />
+    <link rel="alternate" hreflang="x-default" href="https://tradebd.online/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tradebd" />
     <meta property="og:locale" content="en_US" />
@@ -221,6 +232,8 @@
           if (enEl) enEl.setAttribute('href', canonicalHref);
           var bnEl = document.querySelector('link[rel="alternate"][hreflang="bn"]');
           if (bnEl) bnEl.setAttribute('href', canonicalHref + '?lang=bn');
+          var xdEl = document.querySelector('link[rel="alternate"][hreflang="x-default"]');
+          if (xdEl) xdEl.setAttribute('href', canonicalHref);
           var ogUrlEl = document.querySelector('meta[property="og:url"]');
           if (ogUrlEl) ogUrlEl.setAttribute('content', canonicalHref);
         } catch (e) {}
@@ -239,6 +252,11 @@
             "inLanguage": ["en-US", "bn-BD"],
             "publisher": {
               "@id": "https://tradebd.online/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://tradebd.online/blog?q={search_term_string}",
+              "query-input": "required name=search_term_string"
             }
           },
           {
@@ -251,6 +269,73 @@
             "email": "support@tradebd.online",
             "description": "Tradebd is a free Forex & Crypto Trading Academy, live technical analysis chart platform, economic calendar, and virtual paper trading simulator.",
             "areaServed": ["Worldwide", "BD"]
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://tradebd.online/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Tradebd Home",
+                "item": "https://tradebd.online/"
+              }
+            ]
+          },
+          {
+            "@type": "ItemList",
+            "@id": "https://tradebd.online/#sitelinks",
+            "name": "Tradebd Main Navigation & Tools",
+            "itemListElement": [
+              {
+                "@type": "SiteNavigationElement",
+                "position": 1,
+                "name": "Live Chart & Technical Analysis",
+                "url": "https://tradebd.online/"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 2,
+                "name": "Virtual Paper Trading Simulator",
+                "url": "https://tradebd.online/simulator"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 3,
+                "name": "Forex Economic Calendar & BST Sessions",
+                "url": "https://tradebd.online/calendar"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 4,
+                "name": "Forex & Crypto Trading Academy",
+                "url": "https://tradebd.online/academy"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 5,
+                "name": "Educational Trading Blog & Guides",
+                "url": "https://tradebd.online/blog"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 6,
+                "name": "Candlestick Chart Patterns Guide",
+                "url": "https://tradebd.online/patterns"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 7,
+                "name": "Risk & Position Lot Size Calculator",
+                "url": "https://tradebd.online/calculator"
+              },
+              {
+                "@type": "SiteNavigationElement",
+                "position": 8,
+                "name": "Interactive Trade Setup Mentor",
+                "url": "https://tradebd.online/mentor"
+              }
+            ]
           },
           {
             "@type": "WebApplication",

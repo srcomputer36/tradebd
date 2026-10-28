@@ -21,6 +21,8 @@ import {
   ChevronRight,
   PenTool,
   Globe,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export type NavTab =
@@ -36,6 +38,7 @@ export type NavTab =
 
 interface NavbarProps {
   activeTab: NavTab;
+  activeLegalSection?: 'ABOUT' | 'PRIVACY' | 'TERMS' | 'DISCLAIMER' | 'CONTACT';
   onSelectTab: (tab: NavTab) => void;
   onOpenLegalSection?: (section: 'ABOUT' | 'PRIVACY' | 'TERMS' | 'DISCLAIMER' | 'CONTACT') => void;
   balance: number;
@@ -45,6 +48,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
+  activeLegalSection,
   onSelectTab,
   onOpenLegalSection,
   balance,
@@ -55,7 +59,43 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isBn = language === 'bn';
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    try {
+      if (typeof document !== 'undefined') {
+        const saved = localStorage.getItem('tradebd_theme_v2');
+        if (saved === 'dark') return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  });
   const langMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isLightMode) {
+      document.documentElement.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+    }
+    window.dispatchEvent(new CustomEvent('tradebd:theme-change', { detail: { isLightMode } }));
+  }, [isLightMode]);
+
+  const toggleThemeMode = () => {
+    const nextLight = !isLightMode;
+    setIsLightMode(nextLight);
+    if (nextLight) {
+      document.documentElement.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+    }
+    try {
+      localStorage.setItem('tradebd_theme_v2', nextLight ? 'light' : 'dark');
+    } catch {
+      // ignore storage error
+    }
+    window.dispatchEvent(new CustomEvent('tradebd:theme-change', { detail: { isLightMode: nextLight } }));
+  };
 
   // Close language dropdown on click outside
   useEffect(() => {
@@ -147,6 +187,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
   ];
 
+  const tabPathMap: Record<NavTab, string> = {
+    CHART: '/',
+    SIMULATOR: '/simulator',
+    CALENDAR: '/calendar',
+    ACADEMY: '/academy',
+    BLOG: '/blog',
+    PATTERNS: '/patterns',
+    CALCULATOR: '/calculator',
+    MENTOR: '/mentor',
+    LEGAL: '/about',
+  };
+
   const activeNavObj = navItems.find((item) => item.id === activeTab);
   const activeTitle = activeNavObj
     ? activeNavObj.label
@@ -209,8 +261,48 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Zone 2: Portfolio Demo Balance, Language Selector & CTA */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        {/* Zone 2: Theme Toggle, Language Selector, Demo Balance & CTA */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Light (Default) / Dark Mode Segmented Toggle Pill */}
+          <div
+            role="group"
+            aria-label="Theme Mode Toggle"
+            className="min-h-[34px] flex items-center p-0.5 bg-slate-900 border border-slate-700/90 rounded-lg text-xs font-bold"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLightMode) toggleThemeMode();
+              }}
+              aria-label="Switch to Light Mode"
+              title={isBn ? 'লাইট মোড (ডিফল্ট)' : 'Light Mode (Default)'}
+              className={`min-h-[28px] flex items-center gap-1 px-2 py-1 rounded-md transition-all cursor-pointer ${
+                isLightMode
+                  ? 'bg-cyan-400 text-slate-950 font-extrabold shadow-xs'
+                  : 'text-slate-400 hover:text-slate-100'
+              }`}
+            >
+              <Sun className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline text-[11px]">{isBn ? 'লাইট' : 'Light'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (isLightMode) toggleThemeMode();
+              }}
+              aria-label="Switch to Dark Mode"
+              title={isBn ? 'ডার্ক মোড চালু করুন' : 'Switch to Dark Mode'}
+              className={`min-h-[28px] flex items-center gap-1 px-2 py-1 rounded-md transition-all cursor-pointer ${
+                !isLightMode
+                  ? 'bg-cyan-400 text-slate-950 font-extrabold shadow-xs'
+                  : 'text-slate-400 hover:text-slate-100'
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline text-[11px]">{isBn ? 'ডার্ক' : 'Dark'}</span>
+            </button>
+          </div>
+
           {/* Language & Translate Selector Dropdown */}
           <div className="relative" ref={langMenuRef}>
             <button
@@ -323,9 +415,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          {/* Quick Blog & Article Writer Button */}
-          <button
-            onClick={() => onSelectTab('BLOG')}
+          {/* Quick Blog & Article Writer Link */}
+          <a
+            href="/blog"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab('BLOG');
+            }}
             className={`min-h-[34px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
               activeTab === 'BLOG'
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300 font-extrabold'
@@ -334,17 +430,62 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <PenTool className="w-3.5 h-3.5" />
             <span>{isBn ? 'ব্লগ ও আর্টিকেল' : 'Blog'}</span>
-          </button>
+          </a>
 
-          {/* Primary Action Button */}
-          <button
-            onClick={() => onSelectTab('SIMULATOR')}
+          {/* Primary Action Link */}
+          <a
+            href="/simulator"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab('SIMULATOR');
+            }}
             className="min-h-[34px] hidden sm:inline-flex items-center px-3.5 py-1.5 text-xs font-extrabold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
           >
             {t('practiceTrading')}
-          </button>
+          </a>
         </div>
       </header>
+
+      {/* Crawlable Primary Platform Navigation Strip (1-Click Access for Users & Googlebot Sitelinks) */}
+      <nav
+        aria-label="Primary Platform Navigation"
+        className="bg-[#080c14] border-b border-slate-800/90 px-3 sm:px-6 py-1.5 overflow-x-auto select-none shrink-0"
+      >
+        <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 min-w-max">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const targetHref = tabPathMap[item.id] || '/';
+            return (
+              <a
+                key={item.id}
+                href={targetHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTab(item.id);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap border ${
+                  isActive
+                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40 font-bold shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900 border-transparent'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <span>{item.label}</span>
+                {item.badge !== undefined && (
+                  <span
+                    className={`px-1 py-0.2 text-[9px] font-mono font-bold rounded border ${
+                      item.badgeColor || ''
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* =====================================================================
           LEFT SLIDING NAVIGATION WINDOW (বাম পাশের স্লাইডিং মেনু উইন্ডো)
@@ -401,10 +542,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const targetHref = tabPathMap[item.id] || '/';
               return (
-                <button
+                <a
                   key={item.id}
-                  onClick={() => handleSelectFromDrawer(item.id)}
+                  href={targetHref}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectFromDrawer(item.id);
+                  }}
                   className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between gap-3 transition-all cursor-pointer ${
                     isActive
                       ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-xs'
@@ -444,7 +590,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       isActive ? 'text-cyan-400' : 'text-slate-600'
                     }`}
                   />
-                </button>
+                </a>
               );
             })}
           </div>
@@ -490,22 +636,63 @@ export const Navbar: React.FC<NavbarProps> = ({
               ] as const
             ).map((legal) => {
               const Icon = legal.icon;
+              const isLegalActive =
+                activeTab === 'LEGAL' && activeLegalSection === legal.section;
               return (
-                <button
+                <a
                   key={legal.section}
-                  onClick={() => handleSelectFromDrawer('LEGAL', legal.section)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  href={`/${legal.section.toLowerCase()}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectFromDrawer('LEGAL', legal.section);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                    isLegalActive
+                      ? 'bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
                 >
-                  <Icon className="w-3.5 h-3.5 text-slate-500" />
+                  <Icon
+                    className={`w-3.5 h-3.5 ${
+                      isLegalActive ? 'text-cyan-400' : 'text-slate-500'
+                    }`}
+                  />
                   <span>{isBn ? legal.labelBn : legal.labelEn}</span>
-                </button>
+                </a>
               );
             })}
           </div>
         </div>
 
-        {/* Bottom Drawer Language & Virtual Balance Card */}
+        {/* Bottom Drawer Theme, Language & Virtual Balance Card */}
         <div className="p-3.5 border-t border-slate-800 bg-slate-950/80 space-y-2.5">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+            <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              {isLightMode ? (
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-cyan-400" />
+              )}
+              <span>{isBn ? 'থিম মোড (Theme):' : 'Theme Mode:'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={toggleThemeMode}
+              className="bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              {isLightMode ? (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{isBn ? 'ডার্ক মোড (Dark)' : 'Switch to Dark'}</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{isBn ? 'লাইট মোড (Light)' : 'Switch to Light'}</span>
+                </>
+              )}
+            </button>
+          </div>
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
             <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-cyan-400" />

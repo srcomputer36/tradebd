@@ -306,8 +306,18 @@ function buildRouteHtml(baseHtml, item) {
     /<link\s+rel="alternate"\s+hreflang="bn"\s+href="[^"]*"\s*\/>/,
     `<link rel="alternate" hreflang="bn" href="${canonicalUrl}?lang=bn" />`
   );
+  pageHtml = pageHtml.replace(
+    /<link\s+rel="alternate"\s+hreflang="x-default"\s+href="[^"]*"\s*\/>/,
+    `<link rel="alternate" hreflang="x-default" href="${canonicalUrl}" />`
+  );
 
   // 4. Replace OpenGraph & Twitter meta tags
+  if (item.route.startsWith('blog/')) {
+    pageHtml = pageHtml.replace(
+      /<meta\s+property="og:type"\s+content="[^"]*"\s*\/>/,
+      `<meta property="og:type" content="article" />`
+    );
+  }
   pageHtml = pageHtml.replace(
     /<meta\s+property="og:url"\s+content="[^"]*"\s*\/>/,
     `<meta property="og:url" content="${canonicalUrl}" />`
@@ -329,7 +339,84 @@ function buildRouteHtml(baseHtml, item) {
     `<meta name="twitter:description" content="${safeDesc}" />`
   );
 
-  // 5. Replace <article>...</article> inside #seo-prerender with unique route-specific content
+  // 5. Inject route-specific BreadcrumbList & BlogPosting Schema.org JSON-LD into <head>
+  const isBlogArticle = item.route.startsWith('blog/');
+  const breadcrumbItems = [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Tradebd Home',
+      item: 'https://tradebd.online/',
+    },
+  ];
+  if (isBlogArticle) {
+    breadcrumbItems.push({
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Trading Blog',
+      item: 'https://tradebd.online/blog',
+    });
+    breadcrumbItems.push({
+      '@type': 'ListItem',
+      position: 3,
+      name: item.h1,
+      item: canonicalUrl,
+    });
+  } else {
+    breadcrumbItems.push({
+      '@type': 'ListItem',
+      position: 2,
+      name: item.h1,
+      item: canonicalUrl,
+    });
+  }
+
+  const routeGraph = [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonicalUrl}#breadcrumb`,
+      itemListElement: breadcrumbItems,
+    },
+  ];
+
+  if (isBlogArticle) {
+    routeGraph.push({
+      '@type': 'BlogPosting',
+      '@id': `${canonicalUrl}#article`,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': canonicalUrl,
+      },
+      headline: item.h1,
+      description: item.description,
+      image: item.coverImage || 'https://tradebd.online/og-banner.png',
+      datePublished: item.publishedAt || '2025-02-20',
+      dateModified: item.publishedAt || '2025-02-25',
+      author: {
+        '@type': 'Organization',
+        name: item.author || 'Tradebd Editorial Team',
+        url: 'https://tradebd.online/',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Tradebd Financial Education Academy',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://tradebd.online/logo.svg',
+        },
+      },
+      inLanguage: ['en', 'bn'],
+    });
+  }
+
+  const routeJsonLdScript = `\n    <script type="application/ld+json">${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': routeGraph,
+  })}</script>\n  </head>`;
+
+  pageHtml = pageHtml.replace('</head>', routeJsonLdScript);
+
+  // 6. Replace <article>...</article> inside #seo-prerender with unique route-specific content
   const customArticle = `<article>
             <h1 style="font-size: 28px; font-weight: 800; color: #ffffff; margin: 0 0 14px 0;">
               ${safeH1}
@@ -337,7 +424,7 @@ function buildRouteHtml(baseHtml, item) {
             <p>${safeLead}</p>
             ${item.bodyHtml.trim()}
             <p style="margin-top: 20px;">
-              Explore all interactive modules on <a href="https://tradebd.online/" style="color: #38bdf8;">Tradebd Live Chart Analysis</a>, <a href="https://tradebd.online/simulator" style="color: #38bdf8;">Paper Trading Simulator</a>, <a href="https://tradebd.online/calendar" style="color: #38bdf8;">Forex Economic Calendar (BST)</a>, <a href="https://tradebd.online/academy" style="color: #38bdf8;">Trading Academy</a>, <a href="https://tradebd.online/patterns" style="color: #38bdf8;">Candlestick Patterns</a>, and <a href="https://tradebd.online/calculator" style="color: #38bdf8;">Lot Size Calculator</a>.
+              Explore all interactive modules on <a href="https://tradebd.online/" style="color: #38bdf8;">Tradebd Live Chart Analysis</a>, <a href="https://tradebd.online/simulator" style="color: #38bdf8;">Paper Trading Simulator</a>, <a href="https://tradebd.online/calendar" style="color: #38bdf8;">Forex Economic Calendar (BST)</a>, <a href="https://tradebd.online/academy" style="color: #38bdf8;">Trading Academy</a>, <a href="https://tradebd.online/blog" style="color: #38bdf8;">Trading Blog</a>, <a href="https://tradebd.online/patterns" style="color: #38bdf8;">Candlestick Patterns</a>, <a href="https://tradebd.online/calculator" style="color: #38bdf8;">Lot Size Calculator</a>, and <a href="https://tradebd.online/mentor" style="color: #38bdf8;">AI Trade Mentor</a>. Official policies: <a href="https://tradebd.online/about" style="color: #38bdf8;">About Us</a>, <a href="https://tradebd.online/privacy" style="color: #38bdf8;">Privacy Policy</a>, <a href="https://tradebd.online/terms" style="color: #38bdf8;">Terms of Use</a>, <a href="https://tradebd.online/disclaimer" style="color: #38bdf8;">Risk Disclaimer</a>, and <a href="https://tradebd.online/contact" style="color: #38bdf8;">Contact Us</a>.
             </p>
           </article>`;
 
@@ -364,11 +451,46 @@ if (fs.existsSync(htmlPath)) {
   fs.writeFileSync(htmlPath, html, 'utf-8');
   console.log('✓ Inlined production CSS into dist/index.html (0 render-blocking CSS requests)');
 
+  // Also load any custom published blogs from public/blogs-data.json so they get pre-rendered at build time
+  const customBlogsPath = path.resolve('public/blogs-data.json');
+  const allRoutes = [...PRERENDER_ROUTES];
+  if (fs.existsSync(customBlogsPath)) {
+    try {
+      const customBlogs = JSON.parse(fs.readFileSync(customBlogsPath, 'utf-8'));
+      if (Array.isArray(customBlogs)) {
+        for (const cb of customBlogs) {
+          if (cb && cb.slug) {
+            const routeKey = `blog/${cb.slug}`;
+            if (!allRoutes.some((r) => r.route === routeKey)) {
+              const rawParagraphs = String(cb.contentEn || cb.contentBn || '')
+                .split(/\n\n+/)
+                .map((p) => `<p>${escapeHtml(p.trim())}</p>`)
+                .join('\n');
+              allRoutes.push({
+                route: routeKey,
+                title: `${cb.titleEn || cb.titleBn} – Tradebd`,
+                description: cb.excerptEn || cb.excerptBn || cb.titleEn || '',
+                h1: cb.titleEn || cb.titleBn || 'Tradebd Blog Article',
+                lead: cb.excerptBn || cb.excerptEn || '',
+                bodyHtml: rawParagraphs,
+                publishedAt: cb.publishedAt || '2025-02-25',
+                author: cb.author || 'Tradebd Editorial Team',
+                coverImage: cb.coverImage || 'https://tradebd.online/og-banner.png',
+              });
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore json parse error
+    }
+  }
+
   // Generate static pre-rendered HTML files for every route in sitemap.xml
   const prerenderDir = path.join(distDir, 'prerender');
   fs.mkdirSync(prerenderDir, { recursive: true });
 
-  for (const item of PRERENDER_ROUTES) {
+  for (const item of allRoutes) {
     const routeHtml = buildRouteHtml(html, item);
     const outFile = path.join(prerenderDir, `${item.route}.html`);
     fs.mkdirSync(path.dirname(outFile), { recursive: true });
@@ -376,6 +498,6 @@ if (fs.existsSync(htmlPath)) {
   }
 
   console.log(
-    `✓ Generated ${PRERENDER_ROUTES.length} static pre-rendered route HTML files in dist/prerender/ with unique canonical tags`
+    `✓ Generated ${allRoutes.length} static pre-rendered route HTML files in dist/prerender/ with unique canonical & Schema.org tags`
   );
 }

@@ -83,9 +83,11 @@ export const LegalPagesView: React.FC<LegalPagesViewProps> = ({
             const Icon = tab.icon;
             const isActive = activeSection === tab.id;
             return (
-              <button
+              <a
                 key={tab.id}
-                onClick={() => {
+                href={`/${tab.id.toLowerCase()}`}
+                onClick={(e) => {
+                  e.preventDefault();
                   onSelectSection(tab.id);
                   setSubmitted(false);
                 }}
@@ -97,7 +99,7 @@ export const LegalPagesView: React.FC<LegalPagesViewProps> = ({
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{isBn ? tab.labelBn : tab.labelEn}</span>
-              </button>
+              </a>
             );
           })}
         </div>

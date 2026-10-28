@@ -480,14 +480,14 @@ export const AcademyView: React.FC = () => {
                     <button
                       onClick={handleSubmitQuizAnswer}
                       disabled={selectedOption === null}
-                      className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+                      className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
                     >
                       {t('submitAnswer')}
                     </button>
                   ) : (
                     <button
                       onClick={handleNextQuizQuestion}
-                      className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg transition-colors"
+                      className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg transition-colors shadow-sm cursor-pointer"
                     >
                       {currentQuizIndex < QUIZ_QUESTIONS.length - 1
                         ? t('nextQuestion')

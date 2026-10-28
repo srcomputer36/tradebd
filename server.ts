@@ -650,6 +650,31 @@ async function start() {
         if (fs.existsSync(prerenderFile)) {
           return res.sendFile(prerenderFile);
         }
+        // Check if route is a custom blog post (/blog/<slug>)
+        if (cleanRoute.startsWith('blog/')) {
+          const slug = cleanRoute.slice(5);
+          const customArt = serverCustomBlogs.find((b) => b && b.slug === slug);
+          const indexHtmlPath = path.resolve(__dirname, 'dist', 'index.html');
+          if (customArt && fs.existsSync(indexHtmlPath)) {
+            try {
+              let html = fs.readFileSync(indexHtmlPath, 'utf-8');
+              const canonicalUrl = `https://tradebd.online/blog/${slug}`;
+              const rawTitle = String(customArt.titleEn || customArt.titleBn || 'Trading Guide');
+              const safeTitle = `${rawTitle} – Tradebd`.replace(/"/g, '&quot;');
+              const safeDesc = String(customArt.excerptEn || customArt.excerptBn || rawTitle).replace(/"/g, '&quot;');
+              html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${safeTitle}</title>`);
+              html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/>/, `<meta name="description" content="${safeDesc}" />`);
+              html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/>/, `<link rel="canonical" href="${canonicalUrl}" />`);
+              html = html.replace(/<meta\s+property="og:url"\s+content="[^"]*"\s*\/>/, `<meta property="og:url" content="${canonicalUrl}" />`);
+              html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/>/, `<meta property="og:title" content="${safeTitle}" />`);
+              html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/, `<meta property="og:description" content="${safeDesc}" />`);
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              return res.send(html);
+            } catch {
+              // fallback below
+            }
+          }
+        }
       }
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });

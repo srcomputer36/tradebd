@@ -35,17 +35,23 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
 
   const [marketSection, setMarketSection] = useState<'CRYPTO' | 'FOREX'>(initialSec);
   const [selectedPair, setSelectedPair] = useState<Asset>(initialPair);
-  const [balance, setBalance] = useState<number>(Number(currentBalance.toFixed(2)));
+  const [balanceInput, setBalanceInput] = useState<string>(currentBalance.toFixed(2));
   const [riskPercent, setRiskPercent] = useState<number>(1);
   const [side, setSide] = useState<'LONG' | 'SHORT'>('LONG');
-  const [entryPrice, setEntryPrice] = useState<number>(startEntry);
-  const [stopLoss, setStopLoss] = useState<number>(
-    Number((startEntry * (1 - startDist)).toFixed(initialPair.precision))
+  const [entryPriceInput, setEntryPriceInput] = useState<string>(
+    startEntry.toFixed(initialPair.precision)
   );
+  const [stopLossInput, setStopLossInput] = useState<string>(
+    (startEntry * (1 - startDist)).toFixed(initialPair.precision)
+  );
+
+  const balance = Math.max(0, parseFloat(balanceInput) || 0);
+  const entryPrice = Math.max(0, parseFloat(entryPriceInput) || 0);
+  const stopLoss = Math.max(0, parseFloat(stopLossInput) || 0);
 
   // Keep balance in sync if demo account balance changes
   useEffect(() => {
-    setBalance(Number(currentBalance.toFixed(2)));
+    setBalanceInput(currentBalance.toFixed(2));
   }, [currentBalance]);
 
   // Keep selectedPair in sync if selectedAsset prop changes
@@ -55,13 +61,11 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
     setSelectedPair(selectedAsset);
     const liveP = assetPrices?.[selectedAsset.id] ?? initialEntryPrice ?? selectedAsset.basePrice;
     const formattedEntry = Number(liveP.toFixed(selectedAsset.precision));
-    setEntryPrice(formattedEntry);
+    setEntryPriceInput(formattedEntry.toFixed(selectedAsset.precision));
     const dist = selectedAsset.category === 'forex' ? 0.005 : 0.015;
-    setStopLoss(
-      Number(
-        (side === 'LONG' ? formattedEntry * (1 - dist) : formattedEntry * (1 + dist)).toFixed(
-          selectedAsset.precision
-        )
+    setStopLossInput(
+      (side === 'LONG' ? formattedEntry * (1 - dist) : formattedEntry * (1 + dist)).toFixed(
+        selectedAsset.precision
       )
     );
   }, [selectedAsset?.id]);
@@ -77,12 +81,12 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
   const handleSelectPair = (asset: Asset) => {
     setSelectedPair(asset);
     const liveP = Number((assetPrices?.[asset.id] ?? asset.basePrice).toFixed(asset.precision));
-    setEntryPrice(liveP);
+    setEntryPriceInput(liveP.toFixed(asset.precision));
     const dist = asset.category === 'forex' ? 0.005 : 0.015;
     if (side === 'LONG') {
-      setStopLoss(Number((liveP * (1 - dist)).toFixed(asset.precision)));
+      setStopLossInput((liveP * (1 - dist)).toFixed(asset.precision));
     } else {
-      setStopLoss(Number((liveP * (1 + dist)).toFixed(asset.precision)));
+      setStopLossInput((liveP * (1 + dist)).toFixed(asset.precision));
     }
   };
 
@@ -90,10 +94,12 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
   const handleSideChange = (newSide: 'LONG' | 'SHORT') => {
     setSide(newSide);
     const dist = marketSection === 'FOREX' ? 0.005 : 0.015;
-    if (newSide === 'LONG') {
-      setStopLoss(Number((entryPrice * (1 - dist)).toFixed(precision)));
-    } else {
-      setStopLoss(Number((entryPrice * (1 + dist)).toFixed(precision)));
+    if (entryPrice > 0) {
+      if (newSide === 'LONG') {
+        setStopLossInput((entryPrice * (1 - dist)).toFixed(precision));
+      } else {
+        setStopLossInput((entryPrice * (1 + dist)).toFixed(precision));
+      }
     }
   };
 
@@ -338,10 +344,10 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
                 <span className="absolute left-3 top-2.5 text-slate-400 font-mono text-xs">$</span>
                 <input
                   type="number"
-                  min="100"
-                  step="100"
-                  value={balance}
-                  onChange={(e) => setBalance(parseFloat(e.target.value) || 0)}
+                  min="10"
+                  step="any"
+                  value={balanceInput}
+                  onChange={(e) => setBalanceInput(e.target.value)}
                   className="w-full pl-7 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-white font-mono text-xs focus:outline-hidden focus:border-cyan-500"
                 />
               </div>
@@ -382,8 +388,8 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
               <input
                 type="number"
                 step="any"
-                value={entryPrice}
-                onChange={(e) => setEntryPrice(parseFloat(e.target.value) || 0)}
+                value={entryPriceInput}
+                onChange={(e) => setEntryPriceInput(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-white font-mono text-xs focus:outline-hidden focus:border-cyan-500"
               />
             </div>
@@ -401,8 +407,8 @@ export const RiskCalculator: React.FC<RiskCalculatorProps> = ({
               <input
                 type="number"
                 step="any"
-                value={stopLoss}
-                onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
+                value={stopLossInput}
+                onChange={(e) => setStopLossInput(e.target.value)}
                 className={`w-full px-3 py-2 bg-slate-900 border rounded-lg text-white font-mono text-xs focus:outline-hidden ${
                   !isSlValid ? 'border-rose-500' : 'border-slate-800 focus:border-cyan-500'
                 }`}

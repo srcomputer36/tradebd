@@ -63,6 +63,25 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const indicatorMenuRef = useRef<HTMLDivElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    try {
+      if (typeof document !== 'undefined') {
+        const saved = localStorage.getItem('tradebd_theme_v2');
+        if (saved === 'dark') return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    const onThemeChange = () => {
+      setIsLightMode(document.documentElement.classList.contains('light-mode'));
+    };
+    window.addEventListener('tradebd:theme-change', onThemeChange);
+    return () => window.removeEventListener('tradebd:theme-change', onThemeChange);
+  }, []);
 
   // Zoom (visible candle count) & Pan (floating-point candle offset from latest) state
   // Positive panOffset = looking back into history (older candles)
@@ -218,8 +237,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Clear background
-    ctx.fillStyle = '#090d16';
+    // Clear background (Dark #090d16 or Institutional Light #ffffff)
+    ctx.fillStyle = isLightMode ? '#ffffff' : '#090d16';
     ctx.fillRect(0, 0, width, height);
 
     if (candles.length === 0) return;
@@ -289,10 +308,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // 1. Draw horizontal price grid & right-axis labels
     const gridSteps = 5;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillStyle = isLightMode ? '#0f172a' : '#64748b';
+    ctx.font = isLightMode
+      ? '600 10px "JetBrains Mono", monospace'
+      : '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
 
     for (let i = 0; i <= gridSteps; i++) {
@@ -306,6 +327,13 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       // Price on right axis
       ctx.fillText(p.toFixed(asset.precision), chartWidth + 6, y + 3);
     }
+
+    // Subtle right price axis vertical separator line
+    ctx.beginPath();
+    ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.14)' : 'rgba(255, 255, 255, 0.06)';
+    ctx.moveTo(chartWidth, 0);
+    ctx.lineTo(chartWidth, height);
+    ctx.stroke();
 
     // Clip main chart drawing region to [0, chartWidth] so panned candles never overlap price axis
     ctx.save();
@@ -321,15 +349,28 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           ctx.beginPath();
           ctx.setLineDash([4, 4]);
           ctx.strokeStyle =
-            level.type === 'SUPPORT' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+            level.type === 'SUPPORT'
+              ? isLightMode
+                ? 'rgba(5, 150, 105, 0.75)'
+                : 'rgba(16, 185, 129, 0.6)'
+              : isLightMode
+                ? 'rgba(225, 29, 72, 0.75)'
+                : 'rgba(239, 68, 68, 0.6)';
           ctx.lineWidth = 1.2;
           ctx.moveTo(0, y);
           ctx.lineTo(chartWidth, y);
           ctx.stroke();
           ctx.setLineDash([]);
 
-          ctx.fillStyle = level.type === 'SUPPORT' ? '#10b981' : '#ef4444';
-          ctx.font = '9px "JetBrains Mono", monospace';
+          ctx.fillStyle =
+            level.type === 'SUPPORT'
+              ? isLightMode
+                ? '#065f46'
+                : '#10b981'
+              : isLightMode
+                ? '#9f1239'
+                : '#ef4444';
+          ctx.font = 'bold 9px "JetBrains Mono", monospace';
           ctx.fillText(
             `${level.type === 'SUPPORT' ? 'Support' : 'Resist'} $${level.price.toFixed(
               asset.precision
@@ -367,7 +408,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         }
       }
       ctx.closePath();
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.05)';
+      ctx.fillStyle = isLightMode ? 'rgba(37, 99, 235, 0.06)' : 'rgba(59, 130, 246, 0.05)';
       ctx.fill();
 
       const drawGlobalLine = (arr: (number | null)[], color: string, dash: number[] = []) => {
@@ -393,9 +434,19 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         ctx.setLineDash([]);
       };
 
-      drawGlobalLine(bollinger.upper, 'rgba(96, 165, 250, 0.6)');
-      drawGlobalLine(bollinger.middle, 'rgba(147, 197, 253, 0.4)', [2, 2]);
-      drawGlobalLine(bollinger.lower, 'rgba(96, 165, 250, 0.6)');
+      drawGlobalLine(
+        bollinger.upper,
+        isLightMode ? 'rgba(37, 99, 235, 0.65)' : 'rgba(96, 165, 250, 0.6)'
+      );
+      drawGlobalLine(
+        bollinger.middle,
+        isLightMode ? 'rgba(37, 99, 235, 0.45)' : 'rgba(147, 197, 253, 0.4)',
+        [2, 2]
+      );
+      drawGlobalLine(
+        bollinger.lower,
+        isLightMode ? 'rgba(37, 99, 235, 0.65)' : 'rgba(96, 165, 250, 0.6)'
+      );
     }
 
     // 4. Draw EMAs
@@ -420,9 +471,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.stroke();
     };
 
-    if (indicators.showEMA20) drawEma(ema20, '#06b6d4', 1.5); // Cyan
-    if (indicators.showEMA50) drawEma(ema50, '#f97316', 1.5); // Orange
-    if (indicators.showEMA200) drawEma(ema200, '#a855f7', 1.8); // Purple
+    if (indicators.showEMA20) drawEma(ema20, isLightMode ? '#0284c7' : '#06b6d4', 1.6); // Sky / Cyan
+    if (indicators.showEMA50) drawEma(ema50, isLightMode ? '#ea580c' : '#f97316', 1.6); // Orange
+    if (indicators.showEMA200) drawEma(ema200, isLightMode ? '#7c3aed' : '#a855f7', 1.9); // Purple
 
     // 5. Draw Volume bars at bottom of main chart
     if (indicators.showVolume && maxVolume > 0) {
@@ -436,12 +487,20 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         const h = (c.volume / maxVolume) * volHeightMax;
         const y = mainHeight - h;
 
-        ctx.fillStyle = isGreen ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)';
+        ctx.fillStyle = isGreen
+          ? isLightMode
+            ? 'rgba(5, 150, 105, 0.22)'
+            : 'rgba(16, 185, 129, 0.18)'
+          : isLightMode
+            ? 'rgba(220, 38, 38, 0.22)'
+            : 'rgba(239, 68, 68, 0.18)';
         ctx.fillRect(xLeft, y, barWidth, h);
       }
     }
 
     // 6. Draw Candlesticks (Wicks and Bodies)
+    const bullCandleColor = isLightMode ? '#059669' : '#10b981';
+    const bearCandleColor = isLightMode ? '#dc2626' : '#ef4444';
     for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
       const c = candles[g];
       if (!c) continue;
@@ -454,7 +513,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       const yHigh = priceToY(c.high);
       const yLow = priceToY(c.low);
 
-      const color = isGreen ? '#10b981' : '#ef4444';
+      const color = isGreen ? bullCandleColor : bearCandleColor;
 
       ctx.beginPath();
       ctx.strokeStyle = color;
@@ -473,7 +532,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     // 7. Current Price Horizontal Marker & Dash
     const currentY = priceToY(currentPrice);
     ctx.beginPath();
-    ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
+    ctx.strokeStyle = isUp ? bullCandleColor : bearCandleColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 2]);
     ctx.moveTo(0, currentY);
@@ -483,7 +542,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // 8. Render Sub-Chart: RSI (14)
     if (hasRSI && subHeight > 20) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.08)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, subTop - 5);
@@ -495,24 +554,24 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       const y50 = rsiToY(50);
       const y30 = rsiToY(30);
 
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.03)';
+      ctx.fillStyle = isLightMode ? 'rgba(124, 58, 237, 0.04)' : 'rgba(148, 163, 184, 0.03)';
       ctx.fillRect(0, y70, chartWidth, y30 - y70);
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.strokeStyle = isLightMode ? 'rgba(220, 38, 38, 0.5)' : 'rgba(239, 68, 68, 0.4)';
       ctx.setLineDash([2, 3]);
       ctx.moveTo(0, y70);
       ctx.lineTo(chartWidth, y70);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+      ctx.strokeStyle = isLightMode ? 'rgba(100, 116, 139, 0.3)' : 'rgba(148, 163, 184, 0.2)';
       ctx.moveTo(0, y50);
       ctx.lineTo(chartWidth, y50);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+      ctx.strokeStyle = isLightMode ? 'rgba(5, 150, 105, 0.5)' : 'rgba(16, 185, 129, 0.4)';
       ctx.moveTo(0, y30);
       ctx.lineTo(chartWidth, y30);
       ctx.stroke();
@@ -520,8 +579,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
       // RSI Line
       ctx.beginPath();
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = isLightMode ? '#7c3aed' : '#a855f7';
+      ctx.lineWidth = 1.6;
       let firstRsi = true;
       for (let g = firstGlobalIdx; g <= lastGlobalIdx; g++) {
         const val = rsi[g];
@@ -539,8 +598,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       ctx.stroke();
 
       const latestVisibleRsi = rsi[Math.min(candles.length - 1, Math.max(0, lastGlobalIdx))];
-      ctx.fillStyle = '#c084fc';
-      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = isLightMode ? '#5b21b6' : '#c084fc';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillText(
         `RSI (14): ${latestVisibleRsi ? latestVisibleRsi.toFixed(1) : '--'}`,
         8,
@@ -548,10 +607,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       );
     }
 
-    // 8b. Draw Bottom Time Axis Labels
+    // 8b. Draw Vertical Time Grid Lines & Bottom Time Axis Labels
     const timeAxisY = height - 4;
-    ctx.fillStyle = '#64748b';
-    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillStyle = isLightMode ? '#0f172a' : '#64748b';
+    ctx.font = isLightMode
+      ? '600 9px "JetBrains Mono", monospace'
+      : '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     const timeTickStep = Math.max(1, Math.floor(visibleCount / 6));
     const startTick = Math.ceil(firstGlobalIdx / timeTickStep) * timeTickStep;
@@ -560,6 +621,12 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       if (!c) continue;
       const x = globalIdxToX(g);
       if (x < 25 || x > chartWidth - 25) continue;
+      ctx.beginPath();
+      ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.03)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, mainHeight);
+      ctx.stroke();
       const label =
         timeframe === '1D'
           ? new Date(c.time).toLocaleDateString([], { month: 'short', day: 'numeric' })
@@ -573,7 +640,13 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // Right-axis badges (Current Price & RSI 70/50/30)
     if (currentY >= 10 && currentY <= mainHeight) {
-      ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
+      ctx.fillStyle = isUp
+        ? isLightMode
+          ? '#059669'
+          : '#10b981'
+        : isLightMode
+          ? '#dc2626'
+          : '#ef4444';
       ctx.fillRect(chartWidth + 2, currentY - 9, rightPriceBarWidth - 4, 18);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
@@ -582,8 +655,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     if (hasRSI && subHeight > 20) {
       const rsiToY = (val: number) => subTop + (1 - val / 100) * subHeight;
-      ctx.fillStyle = '#64748b';
-      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = isLightMode ? '#1e293b' : '#64748b';
+      ctx.font = isLightMode
+        ? '600 9px "JetBrains Mono", monospace'
+        : '9px "JetBrains Mono", monospace';
       ctx.fillText('70', chartWidth + 6, rsiToY(70) + 3);
       ctx.fillText('50', chartWidth + 6, rsiToY(50) + 3);
       ctx.fillText('30', chartWidth + 6, rsiToY(30) + 3);
@@ -596,7 +671,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       const hy = hoverCoord.y;
 
       if (hx >= 0 && hx <= chartWidth) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.35)' : 'rgba(255, 255, 255, 0.25)';
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -612,10 +687,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
           const cursorPrice =
             minPrice + ((mainHeight - 15 - hy) / (mainHeight - 30)) * priceRange;
-          ctx.fillStyle = '#334155';
+          ctx.fillStyle = isLightMode ? '#0f172a' : '#334155';
           ctx.fillRect(chartWidth + 2, hy - 9, rightPriceBarWidth - 4, 18);
           ctx.fillStyle = '#ffffff';
-          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.font = 'bold 10px "JetBrains Mono", monospace';
           ctx.fillText(cursorPrice.toFixed(asset.precision), chartWidth + 7, hy + 4);
         }
         ctx.setLineDash([]);
@@ -627,37 +702,43 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         });
         const cDiff = activeCandle.close - activeCandle.open;
         const cDiffPct = (cDiff / activeCandle.open) * 100;
-        const candleColor = cDiff >= 0 ? '#10b981' : '#ef4444';
+        const candleColor =
+          cDiff >= 0 ? (isLightMode ? '#047857' : '#10b981') : isLightMode ? '#be123c' : '#ef4444';
 
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = isLightMode ? '#f8fafc' : '#0f172a';
         ctx.fillRect(6, 6, Math.min(width - 100, 480), 22);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeStyle = isLightMode ? 'rgba(15, 23, 42, 0.2)' : 'rgba(255, 255, 255, 0.1)';
         ctx.strokeRect(6, 6, Math.min(width - 100, 480), 22);
 
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#94a3b8';
+        const labelColor = isLightMode ? '#334155' : '#94a3b8';
+        const valColor = isLightMode ? '#090d16' : '#e2e8f0';
+
+        ctx.font = isLightMode
+          ? '600 10px "JetBrains Mono", monospace'
+          : '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = labelColor;
         let textX = 14;
         ctx.fillText(`${dateStr} ·`, textX, 21);
         textX += 62;
 
         ctx.fillText(`O:`, textX, 21);
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = valColor;
         ctx.fillText(`${activeCandle.open.toFixed(asset.precision)}`, textX + 14, 21);
         textX += 68;
 
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = labelColor;
         ctx.fillText(`H:`, textX, 21);
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = valColor;
         ctx.fillText(`${activeCandle.high.toFixed(asset.precision)}`, textX + 14, 21);
         textX += 68;
 
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = labelColor;
         ctx.fillText(`L:`, textX, 21);
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = valColor;
         ctx.fillText(`${activeCandle.low.toFixed(asset.precision)}`, textX + 14, 21);
         textX += 68;
 
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = labelColor;
         ctx.fillText(`C:`, textX, 21);
         ctx.fillStyle = candleColor;
         ctx.fillText(`${activeCandle.close.toFixed(asset.precision)}`, textX + 14, 21);
@@ -683,6 +764,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     effectiveVisibleCount,
     clampedPanOffset,
     timeframe,
+    isLightMode,
   ]);
 
   // Observe container size via ResizeObserver (zero forced reflow) and schedule draw in requestAnimationFrame

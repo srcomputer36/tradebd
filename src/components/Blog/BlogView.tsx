@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BLOG_CATEGORIES,
   BlogArticle,
@@ -179,7 +179,10 @@ async function translateTextSmart(
 function cleanupMarkdownAfterTranslation(raw: string): string {
   return raw
     .replace(/^#\s*#\s*/gm, '## ')
+    .replace(/\*\s+\*/g, '**')
     .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**')
+    .replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**')
+    .replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**')
     .replace(/💡\s*/g, '💡 ')
     .replace(/⚠️\s*/g, '⚠️ ');
 }
@@ -192,6 +195,7 @@ export const BlogView: React.FC<BlogViewProps> = ({
 }) => {
   const { language, setLanguage } = useLanguage();
   const isBn = language === 'bn';
+  const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Admin Authentication State (only Admin can write, edit, or delete articles)
   const [adminKey, setAdminKey] = useState<string>(() => {
@@ -1049,17 +1053,190 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
     }
   };
 
-  // Insert formatting snippet into active language content textarea
-  const insertSnippet = (snippetBn: string, snippetEn: string) => {
-    if (editorLangTab === 'bn') {
-      setContentBnInput(
-        (prev) => `${prev}${prev.endsWith('\n') || !prev ? '' : '\n\n'}${snippetBn}`
-      );
-    } else {
-      setContentEnInput(
-        (prev) => `${prev}${prev.endsWith('\n') || !prev ? '' : '\n\n'}${snippetEn}`
-      );
+  // Bold selected text (or insert **Bold** placeholder at cursor) in active language content textarea
+  const handleBoldSelection = () => {
+    const textarea = contentTextareaRef.current;
+    const isCurrentBn = editorLangTab === 'bn';
+    const currentText = isCurrentBn ? contentBnInput : contentEnInput;
+    const setText = isCurrentBn ? setContentBnInput : setContentEnInput;
+
+    if (!textarea) {
+      const fallback = isCurrentBn ? '**বোল্ড লেখা**' : '**Bold Text**';
+      setText((prev) => `${prev}${prev ? ' ' : ''}${fallback}`);
+      return;
     }
+
+    const start = textarea.selectionStart ?? currentText.length;
+    const end = textarea.selectionEnd ?? currentText.length;
+    const scrollTop = textarea.scrollTop;
+
+    if (start !== end) {
+      const rawSelected = currentText.slice(start, end);
+      // Preserve leading and trailing spaces outside the **bold** wrapper
+      const leadingSpaceMatch = rawSelected.match(/^\s*/);
+      const trailingSpaceMatch = rawSelected.match(/\s*$/);
+      const leadingSpaces = leadingSpaceMatch ? leadingSpaceMatch[0] : '';
+      const trailingSpaces = trailingSpaceMatch ? trailingSpaceMatch[0] : '';
+      const trimmedSelected = rawSelected.slice(
+        leadingSpaces.length,
+        rawSelected.length - trailingSpaces.length
+      );
+
+      if (!trimmedSelected) {
+        textarea.focus();
+        return;
+      }
+
+      const selStart = start + leadingSpaces.length;
+      const selEnd = end - trailingSpaces.length;
+
+      // Case 1: Selected text itself starts and ends with ** -> unwrap bold
+      if (
+        trimmedSelected.startsWith('**') &&
+        trimmedSelected.endsWith('**') &&
+        trimmedSelected.length > 4
+      ) {
+        const unbolded = trimmedSelected.slice(2, -2);
+        const nextText =
+          currentText.slice(0, selStart) +
+          unbolded +
+          currentText.slice(selEnd);
+        setText(nextText);
+        requestAnimationFrame(() => {
+          textarea.focus();
+          textarea.scrollTop = scrollTop;
+          textarea.setSelectionRange(selStart, selStart + unbolded.length);
+        });
+        return;
+      }
+
+      // Case 2: Surrounding characters right outside selection are ** -> unwrap bold
+      if (
+        selStart >= 2 &&
+        currentText.slice(selStart - 2, selStart) === '**' &&
+        currentText.slice(selEnd, selEnd + 2) === '**'
+      ) {
+        const nextText =
+          currentText.slice(0, selStart - 2) +
+          trimmedSelected +
+          currentText.slice(selEnd + 2);
+        setText(nextText);
+        requestAnimationFrame(() => {
+          textarea.focus();
+          textarea.scrollTop = scrollTop;
+          textarea.setSelectionRange(
+            selStart - 2,
+            selStart - 2 + trimmedSelected.length
+          );
+        });
+        return;
+      }
+
+      // Case 3: Wrap selected text in **...** (handle multi-line selections cleanly line by line)
+      const wrapped = trimmedSelected
+        .split('\n')
+        .map((line) => (line.trim() ? `**${line.trim()}**` : line))
+        .join('\n');
+
+      const nextText =
+        currentText.slice(0, selStart) + wrapped + currentText.slice(selEnd);
+      setText(nextText);
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.scrollTop = scrollTop;
+        textarea.setSelectionRange(selStart, selStart + wrapped.length);
+      });
+    } else {
+      // No text selected: insert **placeholder** at cursor and select the inner text
+      const placeholder = isCurrentBn ? 'বোল্ড লেখা' : 'Bold Text';
+      const insertion = `**${placeholder}**`;
+      const nextText =
+        currentText.slice(0, start) + insertion + currentText.slice(end);
+      setText(nextText);
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.scrollTop = scrollTop;
+        textarea.setSelectionRange(
+          start + 2,
+          start + 2 + placeholder.length
+        );
+      });
+    }
+  };
+
+  // Insert formatting snippet into active language content textarea (at cursor or wrapping selection)
+  const insertSnippet = (
+    snippetBn: string,
+    snippetEn: string,
+    mode?: 'H2' | 'BULLET' | 'TIP' | 'WARNING'
+  ) => {
+    const textarea = contentTextareaRef.current;
+    const isCurrentBn = editorLangTab === 'bn';
+    const currentText = isCurrentBn ? contentBnInput : contentEnInput;
+    const setText = isCurrentBn ? setContentBnInput : setContentEnInput;
+    const defaultSnippet = isCurrentBn ? snippetBn : snippetEn;
+
+    if (!textarea) {
+      setText(
+        (prev) =>
+          `${prev}${prev.endsWith('\n') || !prev ? '' : '\n\n'}${defaultSnippet}`
+      );
+      return;
+    }
+
+    const start = textarea.selectionStart ?? currentText.length;
+    const end = textarea.selectionEnd ?? currentText.length;
+    const scrollTop = textarea.scrollTop;
+    const selectedText = currentText.slice(start, end).trim();
+
+    let finalSnippet = defaultSnippet;
+    if (selectedText) {
+      if (mode === 'H2') {
+        finalSnippet = `## ${selectedText.replace(/^##\s*/, '')}`;
+      } else if (mode === 'BULLET') {
+        finalSnippet = selectedText
+          .split('\n')
+          .map((line) => {
+            const t = line.trim();
+            return t ? (t.startsWith('•') ? t : `• ${t}`) : '';
+          })
+          .filter(Boolean)
+          .join('\n');
+      } else if (mode === 'TIP') {
+        finalSnippet = isCurrentBn
+          ? `💡 **প্রো টিপ:** ${selectedText}`
+          : `💡 **Pro Tip:** ${selectedText}`;
+      } else if (mode === 'WARNING') {
+        finalSnippet = isCurrentBn
+          ? `⚠️ **সতর্কবার্তা:** ${selectedText}`
+          : `⚠️ **Risk Warning:** ${selectedText}`;
+      }
+    }
+
+    const before = currentText.slice(0, start);
+    const after = currentText.slice(end);
+    const prefixNewline =
+      before.length > 0 && !before.endsWith('\n\n')
+        ? before.endsWith('\n')
+          ? '\n'
+          : '\n\n'
+        : '';
+    const suffixNewline =
+      after.length > 0 && !after.startsWith('\n') ? '\n\n' : '';
+
+    const nextText = `${before}${prefixNewline}${finalSnippet}${suffixNewline}${after}`;
+    setText(nextText);
+
+    const newCursorStart = before.length + prefixNewline.length;
+    const newCursorEnd = newCursorStart + finalSnippet.length;
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.scrollTop = scrollTop;
+      textarea.setSelectionRange(newCursorStart, newCursorEnd);
+    });
   };
 
   // Publish / Save Article with Automatic Bidirectional Translation (BN <-> EN)
@@ -1360,21 +1537,23 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
 
   // Render formatted markdown-like paragraphs cleanly
   const renderFormattedContent = (rawText: string) => {
-    const blocks = rawText.split(/\n\n+/);
+    // Normalize single-newline after ## subheadings into separate blocks so paragraphs under ## render properly
+    const normalizedText = rawText.replace(/^(##\s+[^\n]+)\n(?!\n)/gm, '$1\n\n');
+    const blocks = normalizedText.split(/\n\n+/);
     return blocks.map((block, idx) => {
       const trimmed = block.trim();
       if (!trimmed) return null;
 
-      // Subheading ##
-      if (trimmed.startsWith('## ')) {
-        const headingText = trimmed.replace(/^##\s+/, '');
+      // Subheading ## (or ###)
+      if (/^#{2,3}\s+/.test(trimmed)) {
+        const headingText = trimmed.replace(/^#{2,3}\s+/, '');
         return (
           <h2
             key={idx}
             className="text-lg sm:text-xl font-extrabold text-white mt-7 mb-3 pb-2 border-b border-slate-800/90 flex items-center gap-2"
           >
             <span className="w-1.5 h-5 bg-emerald-400 rounded-full shrink-0" />
-            <span>{headingText}</span>
+            <span>{formatInlineBold(headingText)}</span>
           </h2>
         );
       }
@@ -1434,11 +1613,23 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
         );
       }
 
-      // Mixed paragraph with potential bullet lines
+      // Mixed paragraph with potential bullet lines or subheadings
       return (
         <div key={idx} className="space-y-2 my-3">
           {lines.map((line, lIdx) => {
             const cleanLine = line.trim();
+            if (!cleanLine) return null;
+            if (/^#{2,3}\s+/.test(cleanLine)) {
+              return (
+                <h2
+                  key={lIdx}
+                  className="text-lg sm:text-xl font-extrabold text-white mt-5 mb-2 pb-1.5 border-b border-slate-800/90 flex items-center gap-2"
+                >
+                  <span className="w-1.5 h-5 bg-emerald-400 rounded-full shrink-0" />
+                  <span>{formatInlineBold(cleanLine.replace(/^#{2,3}\s+/, ''))}</span>
+                </h2>
+              );
+            }
             if (cleanLine.startsWith('•') || cleanLine.startsWith('- ')) {
               return (
                 <div
@@ -1464,14 +1655,17 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
     });
   };
 
-  // Helper to bold **text**
+  // Helper to bold **text**, __text__, <b>text</b>, and <strong>text</strong>
   const formatInlineBold = (text: string) => {
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    const normalized = text
+      .replace(/<\s*(?:b|strong)\s*>(.*?)<\s*\/\s*(?:b|strong)\s*>/gi, '**$1**')
+      .replace(/__([^_]+)__/g, '**$1**');
+    const parts = normalized.split(/(\*\*[\s\S]+?\*\*)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
         return (
-          <strong key={i} className="font-bold text-white">
-            {part.slice(2, -2)}
+          <strong key={i} className="font-extrabold text-white">
+            {part.slice(2, -2).trim()}
           </strong>
         );
       }
@@ -2011,58 +2205,107 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleBoldSelection}
+                        title={
+                          editorLangTab === 'bn'
+                            ? 'লেখা সিলেক্ট করে বোল্ড করুন (Ctrl+B)'
+                            : 'Select text to Bold (Ctrl+B)'
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-[11px] font-extrabold text-cyan-200 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <span className="font-serif font-black text-xs px-1 rounded bg-cyan-500/30 text-white">
+                          B
+                        </span>
+                        <span>
+                          {editorLangTab === 'bn'
+                            ? 'বোল্ড (**Bold**)'
+                            : 'Bold (**Text**)'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() =>
                           insertSnippet(
-                            '## এখানে নতুন সাব-হেডিং লিখুন\nআপনার অনুচ্ছেদ এখানে লিখুন...',
-                            '## Write New Subheading Here\nWrite your paragraph here...'
+                            '## এখানে নতুন সাব-হেডিং লিখুন\n\nআপনার অনুচ্ছেদ এখানে লিখুন...',
+                            '## Write New Subheading Here\n\nWrite your paragraph here...',
+                            'H2'
                           )
                         }
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 cursor-pointer"
                       >
-                        + সাব-হেডিং (##)
+                        {editorLangTab === 'bn'
+                          ? '+ সাব-হেডিং (##)'
+                          : '+ Subheading (##)'}
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() =>
                           insertSnippet(
                             '• প্রথম গুরুত্বপূর্ণ পয়েন্ট\n• দ্বিতীয় গুরুত্বপূর্ণ পয়েন্ট\n• তৃতীয় গুরুত্বপূর্ণ পয়েন্ট',
-                            '• First key point\n• Second key point\n• Third key point'
+                            '• First key point\n• Second key point\n• Third key point',
+                            'BULLET'
                           )
                         }
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-200 cursor-pointer"
                       >
-                        + বুলেট লিস্ট (•)
+                        {editorLangTab === 'bn'
+                          ? '+ বুলেট লিস্ট (•)'
+                          : '+ Bullet List (•)'}
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() =>
                           insertSnippet(
                             '💡 **প্রো টিপ:** এখানে আপনার বিশেষ কৌশল বা গুরুত্বপূর্ণ টিপস লিখুন।',
-                            '💡 **Pro Tip:** Write your actionable trading tip here.'
+                            '💡 **Pro Tip:** Write your actionable trading tip here.',
+                            'TIP'
                           )
                         }
                         className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 cursor-pointer"
                       >
-                        + 💡 প্রো টিপ বক্স
+                        {editorLangTab === 'bn'
+                          ? '+ 💡 প্রো টিপ বক্স'
+                          : '+ 💡 Pro Tip Box'}
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() =>
                           insertSnippet(
                             '⚠️ **সতর্কবার্তা:** এখানে ঝুঁকি সতর্কবার্তা বা করণীয় বিষয় উল্লেখ করুন।',
-                            '⚠️ **Risk Warning:** Mention important risk precautions here.'
+                            '⚠️ **Risk Warning:** Mention important risk precautions here.',
+                            'WARNING'
                           )
                         }
                         className="px-2.5 py-1 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-500/30 text-[11px] font-bold text-amber-300 cursor-pointer"
                       >
-                        + ⚠️ সতর্কবার্তা বক্স
+                        {editorLangTab === 'bn'
+                          ? '+ ⚠️ সতর্কবার্তা বক্স'
+                          : '+ ⚠️ Warning Box'}
                       </button>
                     </div>
                   </div>
 
+                  <p className="text-[11px] text-slate-400">
+                    {editorLangTab === 'bn'
+                      ? 'টিপস: যেকোনো শব্দ বা লাইন মাউস দিয়ে সিলেক্ট করে উপরের "B বোল্ড" বাটনে ক্লিক করুন (অথবা কিবোর্ডে Ctrl+B চাপুন) তাহলে লেখাটি **বোল্ড** হয়ে যাবে।'
+                      : 'Tip: Select any word or sentence and click the "B Bold" button above (or press Ctrl+B / Cmd+B) to make it **Bold**.'}
+                  </p>
+
                   <textarea
+                    ref={contentTextareaRef}
                     rows={14}
                     value={editorLangTab === 'bn' ? contentBnInput : contentEnInput}
+                    onKeyDown={(e) => {
+                      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+                        e.preventDefault();
+                        handleBoldSelection();
+                      }
+                    }}
                     onChange={(e) => {
                       if (editorLangTab === 'bn') {
                         setContentBnInput(e.target.value);
@@ -2073,7 +2316,7 @@ Traders starting with $50 or $100 often try to double their balance overnight. H
                     placeholder={
                       editorLangTab === 'bn'
                         ? 'আপনার আর্টিকেল এখানে বাংলায় (অথবা ইংরেজিতে) লিখুন...\nপাবলিশ বাটনে ক্লিক করলেই অন্য ভাষাটিতে স্বয়ংক্রিয়ভাবে অনুবাদ হয়ে যাবে!'
-                        : 'Write your article in English here...\nWhen you click Publish, it will automatically translate into Bengali as well!'
+                        : 'Write your article in English here...\nSelect any text and click "B Bold" (or press Ctrl+B) to bold it. When you click Publish, it will automatically translate into Bengali as well!'
                     }
                     className="w-full px-4 py-3 bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl text-sm text-slate-100 leading-relaxed focus:outline-hidden font-sans"
                   />

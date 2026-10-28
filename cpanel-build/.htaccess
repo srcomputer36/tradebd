@@ -39,6 +39,10 @@ AddType image/x-icon .ico
   RewriteCond %{DOCUMENT_ROOT}/prerender/$1.html -f
   RewriteRule ^([a-zA-Z0-9\-_/]+?)/?$ /prerender/$1.html [L]
 
+  # Dynamically pre-render newly published custom blog posts via api-blogs.php if static prerender file is not yet written
+  RewriteCond %{DOCUMENT_ROOT}/prerender/blog/$1.html !-f
+  RewriteRule ^blog/([a-zA-Z0-9\-_]+)/?$ /api-blogs.php?prerender_slug=$1 [L,QSA]
+
   # Do not rewrite existing SEO, icon, manifest, or API files
   RewriteRule ^index\.html$ - [L]
   RewriteRule ^sitemap\.xml$ - [L]
@@ -86,6 +90,11 @@ AddType image/x-icon .ico
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   <FilesMatch "\.(html|htm)$">
     Header set Content-Type "text/html; charset=UTF-8"
+    Header set X-Robots-Tag "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+  </FilesMatch>
+  <FilesMatch "^sitemap\.xml$">
+    Header set Content-Type "application/xml; charset=UTF-8"
+    Header set X-Robots-Tag "noindex"
   </FilesMatch>
   <FilesMatch "^(llms\.txt|ai-catalog\.json)$">
     Header set Access-Control-Allow-Origin "*"

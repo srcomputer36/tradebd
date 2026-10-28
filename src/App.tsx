@@ -332,6 +332,7 @@ export default function App() {
     setMetaTag('link[rel="canonical"]', 'href', canonicalUrl);
     setMetaTag('link[rel="alternate"][hreflang="en"]', 'href', canonicalUrl);
     setMetaTag('link[rel="alternate"][hreflang="bn"]', 'href', `${canonicalUrl}?lang=bn`);
+    setMetaTag('link[rel="alternate"][hreflang="x-default"]', 'href', canonicalUrl);
 
     // Send virtual pageview to Google Analytics (GA4) on tab/route change
     try {
@@ -751,13 +752,12 @@ export default function App() {
 
     // Calculate liquidation price
     const maintenanceFactor = 0.9 / order.leverage;
-    let liqPrice = 0;
-    if (order.leverage > 1) {
-      liqPrice =
-        order.side === 'LONG'
+    const liqPrice =
+      order.side === 'LONG'
+        ? order.leverage > 1
           ? order.entryPrice * (1 - maintenanceFactor)
-          : order.entryPrice * (1 + maintenanceFactor);
-    }
+          : 0
+        : order.entryPrice * (1 + maintenanceFactor);
 
     const newPosition: Position = {
       id: `pos-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -916,6 +916,7 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
+        activeLegalSection={legalSection}
         onSelectTab={handleSelectTab}
         onOpenLegalSection={openLegalPage}
         balance={balance}
@@ -1448,6 +1449,130 @@ export default function App() {
             />
           </React.Suspense>
         )}
+
+        {/* Crawlable Semantic Trading Knowledge Hub & Featured Blog Guides (Visible to Users & Googlebot WRS) */}
+        {activeTab === 'CHART' && (
+          <section
+            aria-label="Tradebd Educational Guides & Platform Overview"
+            className="mt-6 bg-[#0b0f19] border border-slate-800 rounded-xl p-4 sm:p-6 space-y-5"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div>
+                <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                  {language === 'bn'
+                    ? 'Tradebd – ফ্রি ফরেক্স ও ক্রিপ্টো ট্রেডিং একাডেমি, টেকনিক্যাল অ্যানালাইসিস ও ডেমো সিমুলেটর গাইড'
+                    : 'Tradebd – Complete Forex & Crypto Trading Academy, Technical Analysis & Paper Trading Hub'}
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  {language === 'bn'
+                    ? 'কোনো নিবন্ধন বা আর্থিক ঝুঁকি ছাড়াই লাইভ ক্যান্ডেলস্টিক চার্ট বিশ্লেষণ, কাস্টম ডেমো ফান্ড ($10–$10,000,000) দিয়ে পেপার ট্রেডিং এবং প্রাতিষ্ঠানিক রিস্ক ম্যানেজমেন্ট শিখুন।'
+                    : 'Master institutional price action, candlestick chart patterns, Bangladesh Standard Time (BST UTC+6) Forex sessions, and 1% risk management with zero financial risk.'}
+                </p>
+              </div>
+              <a
+                href="/blog"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('BLOG');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-bold whitespace-nowrap self-start sm:self-center transition-colors"
+              >
+                {language === 'bn' ? 'সবগুলো ব্লগ আর্টিকেল পড়ুন →' : 'Explore All Trading Guides →'}
+              </a>
+            </div>
+
+            {/* Featured SEO Blog Articles Grid (Direct Crawlable <a href="/blog/..."> Links) */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
+                {language === 'bn'
+                  ? 'জনপ্রিয় ফরেক্স ও ক্রিপ্টো ট্রেডিং গাইডসমূহ (Featured Educational Articles)'
+                  : 'Featured Forex & Crypto Trading Guides (Bengali & English)'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  {
+                    slug: 'forex-trading-bangla-complete-guide',
+                    titleBn: 'ফরেক্স ট্রেডিং কি এবং কিভাবে শুরু করবেন? (A-to-Z বাংলা গাইড)',
+                    titleEn: 'What is Forex Trading & How to Start? Complete Beginner Guide',
+                    tag: 'Forex Basics',
+                  },
+                  {
+                    slug: 'candlestick-chart-patterns-bangla-guide',
+                    titleBn: 'সবচেয়ে কার্যকরী ১২টি ক্যান্ডেলস্টিক চার্ট প্যাটার্ন ও এন্ট্রি নিয়ম',
+                    titleEn: 'Top 12 High-Probability Candlestick Chart Patterns & Entry Rules',
+                    tag: 'Price Action',
+                  },
+                  {
+                    slug: 'risk-management-lot-size-stop-loss-formula',
+                    titleBn: 'ফরেক্স ও ক্রিপ্টো রিস্ক ম্যানেজমেন্ট: ১% রুল, লট সাইজ ও স্টপ লস সূত্র',
+                    titleEn: 'Risk Management: 1% Rule, Lot Size & Stop Loss Formula',
+                    tag: 'Risk Control',
+                  },
+                  {
+                    slug: 'best-forex-trading-sessions-bangladesh-time-bst',
+                    titleBn: 'বাংলাদেশ সময় (BST) অনুযায়ী সেরা ফরেক্স ট্রেডিং সেশন (লন্ডন ও নিউ ইয়র্ক)',
+                    titleEn: 'Best Forex Trading Sessions in Bangladesh Time (BST UTC+6)',
+                    tag: 'BST Sessions',
+                  },
+                  {
+                    slug: 'support-and-resistance-trading-strategy-bangla',
+                    titleBn: 'সাপোর্ট ও রেজিস্ট্যান্স জোন আঁকার সঠিক নিয়ম এবং ব্রেকআউট স্ট্র্যাটেজি',
+                    titleEn: 'Support & Resistance Institutional Zones & Breakout Strategy',
+                    tag: 'Technical Analysis',
+                  },
+                  {
+                    slug: 'rsi-ema-bollinger-bands-indicator-strategy-bangla',
+                    titleBn: 'RSI, EMA 20/50 এবং Bollinger Bands দিয়ে নিখুঁত ট্রেডিং কনফ্লুয়েন্স',
+                    titleEn: 'RSI, EMA 20/50 & Bollinger Bands Indicator Confluence Guide',
+                    tag: 'Indicators',
+                  },
+                  {
+                    slug: 'crypto-paper-trading-simulator-beginner-guide',
+                    titleBn: 'কাস্টম ডেমো ফান্ড দিয়ে পেপার ট্রেডিং প্র্যাকটিস করার পূর্ণাঙ্গ গাইড',
+                    titleEn: 'How to Practice Crypto & Forex Paper Trading with Demo Funds',
+                    tag: 'Simulator',
+                  },
+                  {
+                    slug: 'trading-psychology-fomo-revenge-trading-control',
+                    titleBn: 'ট্রেডিং সাইকোলজি: FOMO এবং ওভার-ট্রেডিং নিয়ন্ত্রণ করার ১০টি গোল্ডেন রুল',
+                    titleEn: 'Trading Psychology: 10 Golden Rules to Stop FOMO & Revenge Trading',
+                    tag: 'Psychology',
+                  },
+                ].map((guide) => (
+                  <a
+                    key={guide.slug}
+                    href={`/blog/${guide.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setBlogSlug(guide.slug);
+                      setActiveTab('BLOG');
+                      try {
+                        window.history.pushState(null, '', `/blog/${guide.slug}`);
+                      } catch {
+                        window.location.hash = `blog/${guide.slug}`;
+                      }
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between gap-2 group"
+                  >
+                    <div className="space-y-1.5">
+                      <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-slate-950 text-emerald-300 border border-emerald-500/30">
+                        {guide.tag}
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-100 group-hover:text-cyan-300 leading-snug transition-colors">
+                        {language === 'bn' ? guide.titleBn : guide.titleEn}
+                      </h4>
+                    </div>
+                    <span className="text-[11px] font-semibold text-cyan-400">
+                      {language === 'bn' ? 'বিস্তারিত পড়ুন →' : 'Read Full Guide →'}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Global Site Footer (Required for Google AdSense Compliance, Trust & Navigation) */}
@@ -1727,20 +1852,31 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-1.5 px-1 shrink-0 z-40 overflow-x-auto">
-        <button
-          onClick={() => handleSelectTab('CHART')}
+      {/* Mobile Bottom Navigation Bar (Semantic <a> links for Googlebot & Mobile UX) */}
+      <nav
+        aria-label="Mobile Bottom Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800 py-1.5 px-1 shrink-0 z-40 overflow-x-auto"
+      >
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('CHART');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'CHART' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
           <span>{t('navChartShort')}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('SIMULATOR')}
+        <a
+          href="/simulator"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('SIMULATOR');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 relative shrink-0 ${
             activeTab === 'SIMULATOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
@@ -1750,67 +1886,91 @@ export default function App() {
           {positions.length > 0 && (
             <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-400 rounded-full" />
           )}
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('CALENDAR')}
+        <a
+          href="/calendar"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('CALENDAR');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'CALENDAR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Calendar className="w-4 h-4" />
           <span>{language === 'bn' ? 'ক্যালেন্ডার' : 'Calendar'}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('ACADEMY')}
+        <a
+          href="/academy"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('ACADEMY');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'ACADEMY' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BookOpen className="w-4 h-4" />
           <span>{t('navAcademyShort')}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('BLOG')}
+        <a
+          href="/blog"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('BLOG');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'BLOG' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <PenTool className="w-4 h-4" />
           <span>{language === 'bn' ? 'ব্লগ' : 'Blog'}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('PATTERNS')}
+        <a
+          href="/patterns"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('PATTERNS');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'PATTERNS' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Layers className="w-4 h-4" />
           <span>{t('navPatternsShort')}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('CALCULATOR')}
+        <a
+          href="/calculator"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('CALCULATOR');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'CALCULATOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <Calculator className="w-4 h-4" />
           <span>{t('navCalculatorShort')}</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => handleSelectTab('MENTOR')}
+        <a
+          href="/mentor"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectTab('MENTOR');
+          }}
           className={`min-h-[44px] min-w-[42px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium p-1.5 shrink-0 ${
             activeTab === 'MENTOR' ? 'text-cyan-300 font-bold' : 'text-slate-300'
           }`}
         >
           <BrainCircuit className="w-4 h-4" />
           <span>{t('navMentorShort')}</span>
-        </button>
+        </a>
       </nav>
     </div>
   );
